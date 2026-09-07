@@ -166,7 +166,34 @@ function drawNormalOrSummaryTable(body, table) {
     
     var tabData = [...table.headers, ...table.rows].map((row) => row.map((column) => column ? column : ""))
     
+    const proofUrlIndex = table.rows[table.headers[0]].indexOf("Proof")
+const urls = table.rows.map((row) => {
+    
+    if (proofUrlIndex != -1 && row[proofUrlIndex].startsWith("https://")) {
+        return row[proofUrlIndex]
+    } else {
+        return ""
+    }
+})
+
+const data = table.rows.map((row) => {
+    if (proofUrlIndex != -1 && row[proofUrlIndex].startsWith("https://")) {
+        row[proofUrlIndex] = "Link"
+    }
+    return row
+})
+    
     const tab = body.appendTable(tabData);
+    
+    if (proofUrlIndex != -1) {
+    urls.forEach((url, index) => {
+        if (url) {
+            const cell = tab.getCell(index + table.headers.length, proofUrlIndex);
+            const paragraph = cell.getChild(0).asParagraph();
+            paragraph.setLinkUrl(url);
+        }
+    })
+    }
     
     for(let row = 0; row < table.headers.length; row++) {
         const headerRow = tab.getRow(row);
