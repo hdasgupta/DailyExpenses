@@ -184,7 +184,7 @@ function getYearString(filters) {
 }
 
 function getStakeholderString(filters) {
-    return "of " +filters["Stakeholder"][0][0].value+"\'s "
+    return "of " +filters["Stakeholder"].map((st) => st[0].value+"\'s ").join(" and ")
 }
 
 function getItemString(filters) {
@@ -640,7 +640,7 @@ function processGroupBy(dataOf, data, filters, groupList,  sorts) {
         }
         
         if("Stakeholder" in filters && groupList. includes("Stakeholder")) {
-            const sh = filters["Stakeholder"][0][0].value
+            const stakeholders = filters["Stakeholder"].map((st) => st[0].value) 
             
             const newGroup = {}
             for(groupId in output.groups) {
@@ -648,7 +648,7 @@ function processGroupBy(dataOf, data, filters, groupList,  sorts) {
                 var match = false
                 for(i in groupArr) {
                     for(g in groupArr[i]) {
-                        if(g == "Stakeholder" && groupArr[i][g]== sh) {
+                        if(g == "Stakeholder" && stakeholders.includes(groupArr[i][g])) {
                             match = true
                         }
                     }
