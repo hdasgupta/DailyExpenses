@@ -166,7 +166,7 @@ function drawNormalOrSummaryTable(body, table) {
     
     var tabData = [...table.headers, ...table.rows].map((row) => row.map((column) => column ? column : ""))
     
-    const proofUrlIndex = table.rows[table.headers[0]].indexOf("Proof")
+    const proofUrlIndex = table.headers[0].indexOf("Proof")
 const urls = table.rows.map((row) => {
     
     if (proofUrlIndex != -1 && row[proofUrlIndex].startsWith("https://")) {
