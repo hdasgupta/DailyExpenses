@@ -277,9 +277,9 @@ function checkBillingDate(row, filters) {
 
 function checkStakeholder(row, filters) {
     console.log(JSON.stringify(row[1]))
-    const stakeholder = filters["Stakeholder"][0][0].value;
+    const stakeholders = filters["Stakeholder"].map((st) => st[0].value);
     const currentStakeholders = row[1].map((st)=>st.name)
-    return currentStakeholders.includes(stakeholder)
+    return currentStakeholders.some(stakeholders.includes(st))
 }
 
 function checkItem(row, filters) {
