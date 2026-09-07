@@ -421,3 +421,4 @@ function getMonthlyData() {
 function getYearlyData() {
     getData(ReportTypes.Yearly)
 }
+

@@ -266,7 +266,7 @@ function drawChart(body, chart) {
     var image = body.appendImage(imageBlob);
 
     // Optional: Set specific dimensions (Width, Height in pixels)
-    image.setWidth(950);
+    image.setWidth(1000);
     image.setHeight(500);
     
     body.appendPageBreak()

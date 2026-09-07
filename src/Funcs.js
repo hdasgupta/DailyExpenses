@@ -66,9 +66,16 @@ function getMonthOptions() {
 
 function getStakeholders() {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Stakeholders");
+    var range = sheet.getRange("A2");
+    var data =[]
+
+    while(range.getValue()) {
+        data.push(range.getValue());
+        range = range.offset(1, 0);
+    }
     
-    return sheet.getRange("A2:C"+sheet.getLastRow()). getValues().filter((row) => row[2]).map((row) => row[0]) 
-    
+    console.log(data);
+    return data;
 }
 
 function getUser() {
@@ -77,28 +84,44 @@ function getUser() {
 
 function getUsers() {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Users");
+    var rowIndex = 2;
+    var users = []
     
-    return sheet.getRange("A2:A"+sheet.getLastRow()).getValues(). map((row) => row[0]) 
-    
+    while(sheet.getRange("A" + rowIndex).getValue()) {
+        users. push(sheet.getRange("A" + rowIndex).getValue())
+        
+        rowIndex++;
+    }
+    return users;
 }
 
 function getEmailUsers() {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Users");
     var rowIndex = 2;
     var users = []
-    return sheet.getRange("A2:C"+sheet.getLastRow()). getValues().filter((row) => row[2]).map((row) => row[0])
     
+    while(sheet.getRange("A" + rowIndex).getValue()) {
+        if(sheet.getRange("C" + rowIndex).getValue()) {
+            users.push(sheet.getRange("A" + rowIndex).getValue())
+        }
+        
+        rowIndex++;
+    }
+    return users;
 }
 
 function getRole() {
     const user = getUser();
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Users");
     var rowIndex = 2;
-    const role = sheet.getRange("A2:B"+sheet.getLastRow()). getValues(). filter((row) => row[0] == user)
-    if(role.length) {
-        return role[0][1]
-    }
     
+    while(sheet.getRange("A" + rowIndex).getValue()) {
+        if(sheet.getRange("A" + rowIndex).getValue() == user) {
+            return sheet.getRange("B" + rowIndex).getValue()
+        }
+        
+        rowIndex++;
+    }
     return "Guest";
 }
 
@@ -123,7 +146,12 @@ function getRoles() {
     const roles = {}
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Roles");
     
-    sheet.getRange("A2:B"+sheet.getLastRow()). getValues(). forEach((row) => roles[row[0]] = row[1].split(",")) 
+    var rowIndex = 2;
+    
+    while(sheet.getRange("A" + rowIndex).getValue()) {
+        roles[sheet.getRange("A" + rowIndex).getValue()] = sheet.getRange("B" + rowIndex).getValue().split(",")
+        rowIndex++;
+    }
     
     return roles;
 }
@@ -160,8 +188,11 @@ function getNotes() {
     var rowIndex = 1;
     const notes = {}
     
-    sheet. getRange("A1:B"+sheet.getLastRow()). getValues(). forEach((row) => notes[row[0]] = row[1]) 
-    
+    while(sheet.getRange("A" + rowIndex).getValue()) {
+        notes[sheet.getRange("A" + rowIndex).getValue()] = sheet.getRange("B" + rowIndex).getValue()
+        
+        rowIndex++;
+    }
     console.log(JSON.stringify(notes))
     return notes;
 }
@@ -195,7 +226,6 @@ function getToday() {
 function getCategories() {
     const categories = []
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("ItemList");
-    
     var currentRange = sheet.getRange("A1")
     while(currentRange.getValue()) {
         categories.push(currentRange.getValue())
