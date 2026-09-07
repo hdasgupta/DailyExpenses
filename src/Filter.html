@@ -1,0 +1,290 @@
+<div id="addFilter" style="display: none"class="modal-overlay"> 
+<div class="modal-box">
+     <table id="filterTypeTab">
+        <tbody>
+            <tr>
+                <td colspan="2" style="text-align: center">
+                    <h3>Add Filter</h3>
+                </td>
+            </tr>
+            <tr>
+                
+                <td width="20%">
+                    Filter Type
+                </td>
+                <td>
+                    <div class="custom-select" id="filterType" data-change="handleFilterType()">
+                        <div class="select-box">Select unit</div>
+                        <div class="options-container">
+                        <? 
+                        var keys = Object.keys(availableFilters);
+                        
+                        for (var i = 0; i < keys.length; i++) { 
+                            var key = keys[i];
+                            var value = availableFilters[key];
+  ?>
+                        <div class="option" data-value="filterValues_<?= i?>">
+                            <?= key ?>
+                        </div>
+                        <? } ?>
+                        </div>
+                    </div>
+                    
+                </td>
+            </tr>
+            
+        </tbody>
+    
+    
+    <? 
+                var keys = Object.keys(availableFilters);
+                var sectionIds = {};
+                
+                for (var i = 0; i < keys.length; i++) {
+                    var itemCategoryPair = {};
+                    var key = keys[i];
+                    var value = availableFilters[key];
+                    var sectionId = `filterValues_${i}`
+                    sectionIds[sectionId] = []
+  ?>
+      
+          <tbody id="<?= sectionId ?>">
+              <? 
+              
+              for(index in value.fields) {
+                        var field = value. fields[index]
+                        var id = "filter_" + i + "_" + index;
+                        sectionIds[sectionId].push(id)
+                         ?>
+                        
+                  <tr>
+                    <td width="20%" style="text-align: right">
+                        <?= field.label ?>
+                    </td>
+                    <td>
+                        <? switch(field.type) {
+                            case "date": ?> 
+                                <input type="text" id="<?= id ?>" value="<?= today. today ?>" readonly>
+                                <input type="button" value="Choose" onclick="showReportCalendar('<?= id ?>', '<?= key ?>')">
+                                <? break;
+                            case "year":
+                            case "month":
+                            case "stakeholder":
+                            case "category": ?>
+                                <div class="custom-select" id="<?= id ?>" data-change="<?= field.type == 'category' ? 'handleFilterCategory()' : '' ?>">
+                                    <div class="select-box">Select <?= field.type ?></div>
+                                    <div class="options-container">
+                                        <? for(opIndex in options[field.type]) {
+                                        var option = options[field.type][opIndex] ?>
+                                        <div class="option" data-value="<?= option.value ?>"><?= option.label ?></div>
+                                    <? } ?>
+                                    </div>
+                                </div>
+                                
+                              
+                                <?
+                                if(field.type == "year") { ?>
+                                    <script>
+window.addEventListener('DOMContentLoaded', function() {
+    setValue("<?= id ?>", String(new Date().getFullYear())) 
+});
+                                    </script>
+                                <? } else if(field.type == "month") { ?>
+                                    <script>
+window.addEventListener('DOMContentLoaded', function() {
+    setValue("<?= id ?>", String(new Date().getMonth())) 
+});
+                                    </script>
+                                <? }
+                                 break;
+                            case "item": 
+                                var categoryId = "filter_" + i + "_" + (index - 1);
+                                itemCategoryPair[id] = categoryId;
+                                ?> 
+                                <div class="custom-select" id="<?= id ?>">
+                                    <div class="select-box">Select <?= id ?></div>
+                                    <div class="options-container">
+    
+                                    </div>
+                                </div>
+                                
+                                <script>
+function handleFilterCategory() {
+    google.script.run
+         .withSuccessHandler(function(data) {
+             fillDropDown("<?= id ?>", data);
+     })
+     .getItems(getValue("<?= categoryId ?>"));
+}                                    
+
+                                </script>
+                                <? break;
+                        } ?>
+                    </td>
+                </tr>
+              <? } ?>
+          </tbody>
+      
+      
+            <? } ?>
+            <tbody>
+                <tr>
+                    <td style="text-align: center" colspan="3">
+                        <input type="button" onclick="hideAddFilter()" value="Close" class="btn ">
+                        <input type="button" onclick="handleAddFilter()" value="Add" class="btn ">
+                    </td>
+                </tr>
+            </tbody>
+     </table>
+     </div>
+</div>
+<script>
+                
+var sectionIds = <?!= JSON.stringify(sectionIds) ?>;
+const columns = <?!= JSON.stringify(columns) ?>;
+var sortList = []
+var groupSortList = []
+
+window.addEventListener('DOMContentLoaded', function() {
+    updateSort()
+    updateGroupBy()
+}) 
+function showAddSort() {
+    show("addSort")
+}
+
+function handleAddingSort() {
+    
+    for(index in sortList) {
+        if(Object.keys(sortList[index])[0] == getText("sortBy")) {
+            sortList[index][getText("sortBy")] = getValue("order")
+            hide("addSort")
+            updateSort()
+            handleFilter()
+            return
+        }
+    }
+    const obj = {}
+    obj[getText("sortBy")] = getValue("order")
+    sortList.push(obj) 
+    
+    hide("addSort")
+    updateSort()
+    handleFilter()
+}
+
+window.addEventListener(
+    'DOMContentLoaded', 
+    function() {
+      
+      handleFilterType()
+     
+      
+});
+
+function handleFilterType() {
+    const selectedFilterType = getValue("filterType");
+    
+    for(sectionId in sectionIds) {
+        visible(sectionId, sectionId == selectedFilterType);
+    }
+}
+
+    
+function showAddFilter() {
+    show("addFilter")
+    //hide("appliedFilter")
+}
+
+function hideAddFilter() {
+    hide("addFilter")
+    //show("appliedFilter")
+}
+
+
+
+function handleSortBy() {
+    visible("sortType", getValue("sortBy") != "-1")
+    handleFilter()
+}
+
+function handleSortType() {
+    handleFilter()
+}
+
+function handleGroupBy() {
+    visible("summary", getValue("groupBy") != "none")
+    handleFilter()
+}
+
+function handleSummary() {
+    handleFilter()
+}
+
+function handleAddFilter() {
+    const filterType = getText("filterType")
+    
+    const sectionFields = availableFilters[filterType].fields
+    
+    
+    const selections = sectionIds[getValue("filterType")]
+    
+     
+    
+    var filter = sectionFields.map((field, index)=> {
+    
+       
+        
+        var obj = {
+            label: field.label, 
+            name: field.name, 
+            value: getElement(selections[index]). className.split(" ").includes("custom-select")?getValue(selections[index]):get(selections[index]), 
+            text: getElement(selections[index]). className.split(" ").includes("custom-select")? getText(selections[index]) : get(selections[index])
+        }
+        
+        return obj
+    })
+   
+    
+    if(!filters[filterType])  {
+        filters[filterType] = []
+    }
+    if(availableFilters[filterType].multiple) {
+        filters[filterType].push(filter)
+    } else {
+        filters[filterType] = [filter]
+    }
+    
+    
+   const hasError = updateAppliedFilters()
+   hideAddFilter()
+   if(!hasError) 
+       handleFilter()
+   
+}
+
+
+
+function resetFilters() {
+    filters = {}
+    updateAppliedFilters()
+}
+
+function showReportCalendar(id, filter) {
+  
+    const t = new Date(today.today);
+    getDateSelectnFunc = function(calObj) {
+        return function() {
+            set(id, calObj.currDay);
+           
+            hideCalendar()
+                  
+        }
+    }
+    
+    showCalendar()
+    updateCurrentCalendar(t.getMonth(), t. getFullYear());
+}
+
+
+</script>

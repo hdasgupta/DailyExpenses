@@ -1,0 +1,251 @@
+<div id="shareEditor" style="display:none;" class="modal-overlay">
+    <div class="modal-box">
+            <h1>Share portions</h1>
+            <table id="shareLoader">
+                <thead>
+                    <tr>
+                        <td style="text-align: center">
+                            <div id="shrLoadr" class="loader" data-msg="Verifying shares">
+    
+                            </div>
+                        </td>
+                    </tr>
+                </thead>
+            </table>
+            <table id="shareContent">
+                <thead>
+                    <tr>
+                        <td>
+                            Name
+                        </td>
+                        <td>
+                            Fix/Avg
+                        </td>
+                        <td>
+                            Portion
+                        </td>
+                        <td>
+                            Action
+                        </td>
+                    </tr>
+                </thead>
+                <tbody id="portion">
+                    
+                    
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td>
+                            <div class="custom-select" id="names" data-change="">
+                                <div class="select-box">Select name</div>
+                                <div class="options-container">
+                                    <? for(index in stakeholders) { ?>
+                                    <div class="option" data-value="<?= stakeholders[index] ?>">
+                                        <?= stakeholders[index] ?>
+                                    </div>
+                                <? } ?>
+                                </div>
+                            </div>
+                        </td>
+                        <td colspan="2">
+                            <div class="custom-select" id="faType" data-change="handleFAType()">
+                                <div class="select-box">Select item</div>
+                                <div class="options-container">
+                                    
+                                    <div class="option" data-value="full">
+                                        Full
+                                    </div>
+                                    <div class="option" data-value="avg">
+                                        Average
+                                    </div>
+                                    <div class="option" data-value="fixed">
+                                        Fixed
+                                    </div>
+                                    <div class="option" data-value="remaining">
+                                        Remaining
+                                    </div>
+                                </div>
+                            </div>
+                            
+                       </div>
+                        <div id="amountDiv" style="display:none;">
+                            <input type="number" id="amount" >
+                        </div>
+                        </td>
+                        <td>
+                            
+                            <input type="button" onclick="handleAddPortion()" value="Add" style="background-color: lightblue;">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align: center" colspan="4">
+                            <input type="button" onclick="restoreShare()" value="Back" class="btn btn-cancel">
+                            <input type="button" value="Done" class="btn btn-confirm" id="addPortion" onclick="handleCompleteStakeholders()">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td id="shareError" style="text-align: center;color: red" colspan="4">
+                            
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+            </div>
+        </div>
+<script>
+var share = [];
+var shareBackup = []
+var portionIndex = 0;
+
+<?!= verifyShare ?>
+
+window.addEventListener('DOMContentLoaded', function() {
+    hide("shareLoader")
+    show("shrLoadr") 
+});
+
+function handleFAType() {
+    visible("amountDiv", getValue("faType") == "fixed")
+}
+
+function handleShare() {
+    //hide("form");
+    getElement("addPortion").disabled = false
+    show("shareEditor");
+    backupShare()
+}
+
+function handleAddPortion() {
+    
+    const id = addShareRow(getValue("names"), getValue("faType"), get("amount"));
+    
+    if(getValue("faType") == "avg" || getValue("faType") == "full" || getValue("faType") == "remaining") {
+        share.push({
+            id: id,
+            name: getValue("names"),
+            type: getValue("faType")
+        })
+
+    } else {
+
+        share.push({
+            id: id,
+            name: getValue("names"),
+            type: "fixed",
+            amount: get("amount")
+        })
+        
+    }
+
+}
+
+function addShareRow(nm, typ, amt) {
+    const id = "portion_" + portionIndex++;
+    const tr = document.createElement("tr");
+
+    tr.id = id;
+
+    const name = document.createElement("td");
+    name.textContent = nm;
+    tr.appendChild(name);
+
+    const type = document.createElement("td");
+    type.textContent = typ;
+    tr.appendChild(type);
+
+    const amount = document.createElement("td");
+    if(faType == "fixed") {
+        amount.textContent = amt;
+    }
+    
+    tr.appendChild(amount);
+
+    const action = document.createElement("td");
+    const remove = document.createElement("input")
+    remove.type = "button"
+    remove.value = "Remove"
+    remove.addEventListener('click', () => {
+        handleRemovePortion(id)
+    });
+    action.appendChild(remove);
+    tr.appendChild(action)
+    getElement("portion").appendChild(tr)
+    
+    return id
+}
+
+function handleRemovePortion(id) {
+    const toRemove = getElement(id);
+    getElement("portion").removeChild(toRemove);
+   
+    share = share.filter((item) => {
+        return item.id != id;
+    })
+   
+}
+
+function handleCompleteStakeholders() {
+    //getElement("addPortion").disabled = true
+    getElement("shareError").textContent = "";
+    show("shareLoader")
+    hide("shareContent")
+    
+    renderShareError(verifyShare(share)) 
+    
+}
+
+function renderShareError(verification) {
+    hide("shareLoader")
+    show("shareContent")
+    if(!verification.success) {
+        getElement("shareError").textContent = verification.message;
+    } else {
+        //getElement("addPortion").disabled = false
+        //show("form");
+        hide("shareEditor");
+        updateShare()
+    }
+}
+
+function backupShare() {
+    shareBackup = [];
+    clearChildren("portion")
+    
+    for(index in share) {
+        const id = addShareRow(share[index].name, share[index].type, share[index].amount)
+    
+        share[index].id = id
+        
+        if(share[index].type == "avg" || share[index].type == "full" || share[index].type == "remaining") {
+            shareBackup.push({
+                id: id,
+                name: share[index].name, 
+                type: share[index].type
+            })
+
+         } else {
+
+            shareBackup.push({
+                id: id,
+                name: share[index].name,
+                type: "fixed",
+                amount: share[index].amount
+            })
+            
+        }
+ 
+    }
+    
+}
+
+function restoreShare() {
+    share = []
+    for(index in shareBackup) {
+        share[index] = shareBackup[index];
+    }
+    //show("form");
+    hide("shareEditor");
+    updateShare();
+    
+}
+        </script>

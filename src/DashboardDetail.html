@@ -1,0 +1,105 @@
+<div id="detail" class="panel right">
+    <button onclick="backToSummary()" class="btn-link" ><< Back</button>
+    <h2 id="detail-title"></h2>
+    <h2>Filters: </h2>
+    <h3 id="filter"></h3>
+    <div id="detail-container"></div>
+    <dialog id="imageDialog">
+    <div class="dialog-content">
+      <button class="close-btn" onclick="closeDialog()" aria-label="Close">&times;</button>
+      <img id="proof" src="https://via.placeholder.com/800x600" alt="Sample Display Image">
+    </div>
+  </dialog>
+</div>
+<script>
+const dialog = document.getElementById('imageDialog');
+
+function renderDetail(url, row, col) {
+    currentIndex++
+    screen = screens[2]
+    screenUrl = url
+    const dashboard = dashboardUrls[url]
+    
+    var tabData = [...dashboard.summaryTable.headers, ...dashboard.summaryTable.rows];
+    
+    const keyObj = dashboard.groups.map((group) => {
+        const keyPart = {}
+        keyPart[group] = tabData[row][col][group]
+        return keyPart
+    }) 
+    
+    finalRemderDetail(keyObj) 
+   
+}
+
+function finalRemderDetail(keyObj) {
+
+     const dashboard = dashboardUrls[screenUrl]
+      
+     document.getElementById('detail-title').textContent = dashboard.title
+     
+    document.getElementById("filter").innerHTML = keyObj.map((key) => {
+        const [k, v] = Object.entries(key)[0]
+        return k+" = "+v
+    }).join(`<br/>`) 
+    
+    const key = JSON.stringify(keyObj)
+ 
+    var rows = dashboard.groupRows[key]
+    
+    const data = [dashboard.groupHeader, ...rows]
+    
+    createStickyTable({
+            container: document.getElementById('detail-container'),
+            rowCount: data.length,
+            colCount: data[0].length,
+            freezeRows: 1,
+            freezeCols: 1,
+            mergeCells: [],
+            getCellContent: (r, c) => {
+                if(data[r][c] && data[r][c].startsWith("https")) {
+                    return `<button class="btn-link" onclick="showProof(\'${data[r][c]}\')">Show</button>`
+      
+                } else {
+                    return data[r][c]
+                }
+            }
+        });
+    
+    updatePanels()
+}
+
+function backToSummary() {
+    currentIndex--
+    screen = screens[1]
+    updatePanels()
+}
+
+function openDialog() {
+      dialog.showModal(); // Opens dialog as a modal with a backdrop
+    }
+
+    function closeDialog() {
+      dialog.close();
+    }
+    
+function showProof(imageUrl) {
+    document.getElementById("proof"). src= imageUrl
+    openDialog() 
+}
+
+// Close when clicking on the backdrop outside the dialog box
+    dialog.addEventListener('click', (event) => {
+      const rect = dialog.getBoundingClientRect();
+      const isInDialog = (
+        rect.top <= event.clientY &&
+        event.clientY <= rect.top + rect.height &&
+        rect.left <= event.clientX &&
+        event.clientX <= rect.left + rect.width
+      );
+      
+      if (!isInDialog) {
+        dialog.close();
+      }
+    });
+</script>

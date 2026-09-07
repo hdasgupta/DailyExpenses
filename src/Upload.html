@@ -1,0 +1,96 @@
+<div id="uploadProof" style="display:none;" class="modal-overlay">
+    <div class="modal-box">
+        <h1>Upload Proof</h1>
+        <div id="proofLoader" class="loader" data-msg="Uploading proof image">
+    
+        </div>
+        <table id="proofMain">
+            <tbody>
+                <tr>
+                    <td>
+                        Proof
+                    </td>
+                    <td>
+                        <input type="hidden" id="timeStamp">
+                        <input type="file" id="proofFile" accept="image/jpeg">
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="text-align: center">
+                        <input type="button" value="Back" onclick="hide('uploadProof')" >
+                        <input type="button" value="Upload" onclick="uploadProof()">
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<div id="uploadProofMsg" style="display:none;" class="modal-overlay">
+    <div class="modal-box">
+        <center>
+            <h1><span id="msgStatus"></span> Proof</h1>
+            <div id="uploadMessage"></div>
+            <input type="button" value="Ok" onclick="hide('uploadProofMsg')">
+        </center>
+    </div>
+</div>
+<script>
+function fileToBase64(id, consumeBase64) {
+    var base64Data = null
+    
+    const proof = getElement(id);
+    if (proof.files.length > 0) {
+        const file = proof.files[0];
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            base64Data = e.target.result;
+            consumeBase64(base64Data) 
+        };
+        reader.readAsDataURL(file);
+    } else {
+        consumeBase64(null) 
+    }
+    
+    
+}
+function uploadProof() {
+    hide("proofMain") 
+    show("proofLoader") 
+    fileToBase64("proofFile", function(base64) {
+        google.script.run
+            .withSuccessHandler(renderUpload)
+            .withFailureHandler(handleUploadError)
+            .saveProof(
+                base64, 
+                get("timeStamp") +"Z.jpg"
+            )
+    })
+    
+}
+
+function renderUpload(flag) {
+     
+    if(flag) {
+        handleDate("curr")
+        hide("uploadProof")
+        getElement("msgStatus").textContent = "Success";
+        getElement("uploadMessage").textContent = "Proof uploaded successfully"
+    } else {
+         getElement("msgStatus").textContent = "Failure";
+        getElement("uploadMessage").textContent = "Proof uploaded unsuccessful"
+    }
+    show("uploadProofMsg") 
+    show("proofMain") 
+    hide("proofLoader") 
+}
+
+function handleUploadError(e) {
+    
+    getElement("msgStatus").textContent = "Failure";
+    getElement("uploadMessage").textContent = e. message
+    show("uploadProofMsg")
+    show("proofMain") 
+    hide("proofLoader") 
+}
+
+</script>

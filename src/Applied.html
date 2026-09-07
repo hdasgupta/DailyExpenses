@@ -1,0 +1,316 @@
+<div id="appliedFilter">
+            
+      <table >
+        <tbody id="sortTypeTab">
+            <tr>
+                <td colspan="3" style="text-align: center">
+                    <h3>Applied Sort, filter and group</h3>
+                </td>
+            </tr>
+        </tbody>
+        
+          <tbody id="appliedFilter">
+              <? 
+                var keys = Object.keys(availableFilters);
+   
+                
+                for (var i = 0; i < keys.length; i++) {
+                    
+                    var key = keys[i];
+                    var value = availableFilters[key];
+                    var sectionId = `filter_${i}`
+                    var labelId = `filterLabel_${i}`;
+                    var valueId = `filterValue_${i}`;
+                   
+  ?>
+               <tr id="<?= sectionId ?>">
+                   <td id="<?= labelId ?>" width="20%">
+                       <?= key ?>
+                   </td>
+                   <td id="<?= valueId ?>">
+                       
+                   </td>
+                   <td width="20%">
+                       <input type="button" value="Remove" onclick="removeFilter('<?= key ?>')">
+                   </td>
+               </tr>
+               <? } ?>
+               <tr id="noFilter">
+                   <td colspan="3" style="text-align: center">
+                       No Filter Added
+                   </td>
+                 
+               </tr>
+          
+              <tr>
+                  <td colspan="3" style="text-align: center; color: red" id="errorFilter">
+                      
+                  </td>
+              </tr>
+          </tbody>
+          <tbody>
+              <tr>
+                  <td colspan="3" style="text-align: center">
+                      <input type="button" class="btn" value="Add Filter" onclick="showAddFilter()">
+                  </td>
+              </tr>
+          </tbody>
+          <tbody id="sorts">
+            <tr>
+                <td width="20%" id="sortLabel">
+                    Sort By
+                </td>
+                <td id="sortList">
+                    none
+                </td width="20%">
+                <td id="actionList">
+                    
+                </td>
+            </tr>
+        </tbody>
+        <tbody id="sortButtons">
+              <tr>
+                  <td colspan="3" style="text-align: center">
+                      <input type="button" class="btn" value="Add Sort" onclick="show('addSort')">
+                  </td>
+              </tr>
+          </tbody>
+        <tbody id="groupTab">
+            <tr>
+                <td width="20%">
+                    Group By
+                </td>
+                <td id="groupList">
+                    None
+                </td>
+                <td id="groupAction">
+                    
+                </td>
+            </tr>
+        </tbody>
+        <tbody id="groupButtons">
+              <tr>
+                  <td colspan="3" style="text-align: center">
+                      <input type="button" class="btn" value="Add Group" onclick="showGroupBy()">
+                  </td>
+              </tr>
+          </tbody>
+          <tbody id="summaryTab">
+            <tr>
+                <td width="20%">
+                    Summary
+                </td>
+                <td id="summaryList">
+                    None
+                </td>
+                <td id="summaryAction">
+                    
+                </td>
+            </tr>
+        </tbody>
+        <tbody id="summaryButtons">
+              <tr>
+                  <td colspan="3" style="text-align: center">
+                      <input type="button" class="btn" value="Add Summary" onclick="showSummary()">
+                  </td>
+              </tr>
+          </tbody>
+          <tbody id="groupSorts">
+            <tr>
+                <td width="20%">
+                    Sort By
+                </td>
+                <td id="groupSortList">
+                    none
+                </td width="20%">
+                <td id="groupActionList">
+                    
+                </td>
+            </tr>
+        </tbody>
+        <tbody id="groupSortButtons">
+              <tr>
+                  <td colspan="3" style="text-align: center">
+                      <input type="button" class="btn" value="Add Sort" onclick="show('groupAddSort')">
+                  </td>
+              </tr>
+          </tbody>
+          <tbody id="plotChart">
+            <tr>
+                <td colspan="3" style="text-align: center">
+                    <input type="button" class="btn" value="Show Bar Chart" onclick="showChart()">
+                </td>
+                
+            </tr>
+        </tbody>
+          <? if(permissions.includes("admin")) { ?>
+          <tbody id="backupRestoreButtons">
+              <tr>
+                  <td colspan="3" style="text-align: center">
+                      <input type="button" class="btn" value="Backup" id="backupBtn" onclick="backupData();">
+                      <input type="button" class="btn" value="Search in Backup" id="searchBackupBtn" onclick="searchInBackup()">
+                      <input type="button" class="btn" value="Restore" id="restoreBtn" onclick="restoreData()">
+                      <input type="button" class="btn" value="Purge" id="purgeButton" onclick="purgeData()">
+                  </td>
+              </tr>
+          </tbody>
+          <? } ?>
+          <tbody id="saveLoadButtons">
+              <tr>
+                  <td colspan="3" style="text-align: center">
+                      <input type="button" class="btn" value="Download" id="downloadBtn" onclick="downloadData();">
+                      <input type="button" class="btn" value="Reset filter" id="resetFilterBtn" onclick="resetFilter()">
+                      <input type="button" class="btn" value="Save filter" id="saveFilterBtn" onclick="saveCurrentFilter()">
+                      <input type="button" class="btn" value="Manage filter" onclick="loadFilters()">
+                  </td>
+              </tr>
+          </tbody>
+     </table>
+     <? if(permissions.includes("edit") || permissions.includes("simple")) { ?>
+     <input type="button" value="Back" onclick="hideReport()">
+     <? } ?>
+     <input type="button" value="Search" id="searchBtn" onclick="handleFilter()">
+</div>
+<script>
+var filters = {}
+const dateFilters = <?!= JSON.stringify(dateFilters) ?>;
+
+window.addEventListener(
+    'DOMContentLoaded', 
+    function() {
+      
+      updateAppliedFilters()
+      <? if(!permissions.includes("edit") && ! permissions.includes("view") && !permissions.includes("simple")) { ?>
+      show("report") 
+      handleFilter()
+      <? } ?>
+      
+});
+
+
+<?!= verifyFilter ?>
+
+function resetFilter() {
+    filters = {}
+    sortList = []
+    groupByList = new Set()
+    summaryList = new Set()
+    groupSortList = []
+    
+    updateAppliedFilters()
+    updateSort()
+    updateGroupBy()
+    updateSummary()
+    updateGroupSort()
+    
+    changeAppliedFiltersVisibility()
+    handleFilter()
+}
+
+function downloadData() {
+   
+    savePageAsPDF()
+}
+
+function changeAppliedFiltersVisibility() {
+    <? if(permissions.includes("admin")) { ?>
+    visible("backupRestoreButtons", Object.keys(filters).length && !groupByList.size)
+    hide("backupBtn") 
+    <? } ?>
+    visible("plotChart", groupByList.size && summaryList.has("Sum of expenses"));
+    visible("searchBtn", Object.keys(filters).length)
+    visible("downloadBtn", Object.keys(filters).length)
+    visible("resetFilterBtn", Object.keys(filters).length || sortList.length || groupByList.size || summaryList.size || groupSortList.length)
+    visible("saveFilterBtn", Object.keys(filters).length)
+    visible("sorts", groupByList.size==0)
+    visible("sortButtons", groupByList.size==0)
+    visible("groupTab", sortList.length==0)
+    visible("groupButtons", sortList.length==0)
+    visible("summaryTab", sortList.length==0 && groupByList.size != 0)
+    visible("summaryButtons", sortList.length==0 && groupByList.size != 0)
+    visible("groupSorts", sortList.length == 0 && groupByList.size!=0)
+    visible("groupSortButtons", sortList.length == 0 && groupByList.size!=0)
+}
+
+function updateAppliedFilters() {
+    var keys = Object.keys(availableFilters);
+    
+    hide("errorFilter") 
+   
+    const hasError = renderFilterError(
+        verifyFilter(filters)
+    );
+        
+        
+    keys.forEach((filter, i) => {
+        var sectionId = `filter_${i}`
+        var labelId = `filterLabel_${i}`;
+        var valueId = `filterValue_${i}`
+        if(filters[filter]) {
+            clearChildren(valueId);
+            
+            for(rowIndex in filters[filter]) {
+                const div = document.createElement("div")
+                div.textContent = filters[filter][rowIndex].map((column) => (column.label + " " + column.text)). join(" ");
+                getElement(valueId).appendChild(div)
+                
+            }
+            
+        } else {
+           
+            hide(sectionId)
+        }
+        
+        visible(sectionId, filters[filter])
+    })
+    visible("noFilter",  isEmpty(filters))
+    
+    changeAppliedFiltersVisibility()
+    
+    return hasError
+}
+
+function renderFilterError(err) {
+    if(err) {
+        getElement("errorFilter").textContent = err;
+        show("errorFilter")
+        loaded(true)
+        return true
+    }
+    
+    return false
+}
+
+function saveCurrentFilter() {
+    show("saveFilter")
+}
+
+
+
+function removeFilter(f) {
+   
+    const newFilters ={}
+    for(filter in filters) {
+        
+        if(filter != f) {
+            newFilters[filter] = filters[filter]
+        }
+    }
+    filters = newFilters
+    updateAppliedFilters()
+    handleFilter()
+}
+
+function handleFilter() {
+    const groupBys = Array.from(groupByList);
+    const summarys = Array.from(summaryList);
+    
+    currentPageIndex++;
+    loaded(false);
+    
+    google.script.run
+        .withSuccessHandler(renderPage(currentPageIndex))
+        .withFailureHandler(renderDataFailure)
+        .getDataOfFilter(filters, groupBys.length == 0 ? sortList : groupSortList, groupBys, summarys, false);    
+}
+</script>

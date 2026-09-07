@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Expenses</title>
+    <?!= include("Styles") ?>
+    <link href="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace-theme-default.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js" integrity="sha512-plOdviVmws4Y3JAvbnpfKb2hVxKM1lCwsi3vmElYRj+tiDLffZ4FVUj5a8vyKJ9pIgl8JCAHEJ4D1iUKBecswg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/5.0.8/jspdf.plugin.autotable.min.js" integrity="sha512-QLh0AACvI+3C+bmn3QdH6blN0NWBxwGvBDgV67TvKV5Q2knO9+/+lguVL23JQ9DR7CnfuOSYUBURlXjmJeK11Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+
+<body style="font-size: 32px">
+    
+    <?!= include("Header") ?>
+   
+
+    <? if(permissions.includes('no')) { ?>
+    
+    <?!= include("Guest") ?>
+    
+    <? } else { ?>
+
+    <?!= include("Script") ?>
+   
+        
+    <?!= include("Form") ?>
+        
+    <?!= include("Share") ?>
+ 
+    <? if(permissions.includes("report")) { ?>
+    
+    <?!= include("Report") ?>
+    
+    <? } ?>
+    
+    <?!= include("Content") ?>
+    
+    <? if(permissions.includes("edit") || permissions.includes("simple")) { ?>
+    
+    <?!= include("Upload") ?>
+
+    <? } ?>
+    
+    <?!= include("Calendar") ?>
+    
+    <? } ?>
+    
+    
+</body>
+</html>

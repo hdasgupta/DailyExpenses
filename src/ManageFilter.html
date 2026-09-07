@@ -1,0 +1,155 @@
+<div id="manageFilter" style="display: none" class="modal-overlay">
+    <div class="modal-box">
+        <table>
+            <tbody>
+                <tr>
+                    <td colspan="3" style="text-align: center">
+                        <h3>Manage Filters</h3>
+                    </td>
+                </tr>
+            </tbody>
+            <tbody id="filterNames">
+                
+            </tbody>
+            <tbody id="manageFilterLoader">
+                <tr>
+                    <td colspan="3" style="text-align: center">
+                        <div id="manageFiltrLoadr" class="loader" data-msg="Loading saved filter">
+    
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+            <tbody>
+                <tr>
+                    <td colspan="3" style="text-align: center">
+                        <input type="button" value="Close" onclick="hide('manageFilter')">
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<div id="confirmRemoveFilter" style="display: none" class="modal-overlay">
+    <div class="modal-box">
+        <center>
+            <p>
+                Are you want to sure to delete "<span id="fname"></span>"? 
+            </p>
+            <input type="hidden" id="filName">
+            <input type="button" value="Yes" onclick="removeFilter()">
+            <input type="button" value="No" onclick="cancelRemove()">
+        </center>
+    </div>
+</div>
+<script>
+window.addEventListener(
+    'DOMContentLoaded', 
+    function() {
+      
+      hide("manageFilterLoader")
+      show("manageFiltrLoadr") 
+      
+});
+
+function loadFilters() {
+    show("manageFilter")
+    show("manageFilterLoader")
+    hide("filterNames")
+    google.script.run
+        .withFailureHandler(function(e) { }) 
+        .withSuccessHandler(addFilterNames)
+        .getSavedFilterNames();
+}
+
+function addFilterNames(filterNames) {
+    
+    clearChildren("filterNames")
+    
+    if(filterNames.length == 0) {
+        const tr = document.createElement("tr")
+        const td = document.createElement("td")
+        td.colspan = "3"
+        td.style.textAlign = "center"
+        td.textContent = "No filters are saved."
+        tr.appendChild(td)
+        getElement("filterNames").appendChild(tr)
+    }
+    
+    filterNames.forEach((filterName)=> {
+        
+        const tr = document.createElement("tr")
+        const nameCol = document.createElement("td")
+        const loadCol = document.createElement("td")
+        const removeCol = document.createElement("td")
+        const load = document.createElement("input")
+        const remove = document.createElement("input")
+        
+        nameCol.textContent = filterName
+        
+        load.type = "button"
+        load.value = "Load"
+        load.addEventListener("click", function() {
+            show("manageFilterLoader")
+            hide("filterNames")
+            google.script.run
+                .withSuccessHandler(loadVariables)
+                .getFilterRow(filterName)
+        })
+        
+        remove.type = "button"
+        remove.value = "Remove"
+        remove.addEventListener("click", function() {
+            set("filName", filterName)
+            show("manageFilterLoader")
+            hide("filterNames")
+            show('confirmRemoveFilter')
+        })
+        
+        tr.appendChild(nameCol)
+        
+        loadCol.appendChild(load)
+        removeCol.appendChild(remove)
+        
+        tr.appendChild(loadCol)
+        tr.appendChild(removeCol)
+        
+        getElement("filterNames").appendChild(tr)
+    })
+    hide("manageFilterLoader")
+    show("filterNames")
+}
+
+function loadVariables(obj) {
+   
+    filters = obj.filters
+    if(obj.groups.length == 0) {
+        sortList = obj.sorts
+    } else {
+        groupSortList = obj.sorts
+    }
+    
+    groupByList = new Set(obj.groups)
+    summaryList = new Set(obj.summaries)
+    hide("manageFilter")
+    
+    updateAppliedFilters()
+    updateSort()
+    updateGroupBy()
+    updateSummary()
+    handleFilter()
+}
+
+function removeFilter() {
+    hide('confirmRemoveFilter')
+    google.script.run
+        .withSuccessHandler(addFilterNames)
+        .removeFilterRow(get("filName"))
+}
+
+function cancelRemove() {
+    hide('confirmRemoveFilter')
+    hide("manageFilterLoader")
+    show("filterNames")
+}
+</script>

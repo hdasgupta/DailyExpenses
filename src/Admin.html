@@ -1,0 +1,188 @@
+<div id="confirmBackup" style="display:none;" class="modal-overlay">
+    <div class="modal-box">
+        <div id="confirmBackupLoader" class="loader" data-msg="Backup in progress">
+            
+        </div>
+        <center id="confirmBackupMain">
+            <h1>Confirm Backup</h1>
+            <div>
+                Are you sure to backup current filtered data? 
+            </div>
+            <div>
+                <input type="button" value="Yes" onclick="backupConfirmed()">
+                <input type="button" value="No" onclick="hide('confirmBackup')">
+            </div>
+            
+        </center>
+    </div>
+</div>
+<div id="confirmRestore" style="display:none;" class="modal-overlay">
+    <div class="modal-box">
+        <div id="confirmRestoreLoader" class="loader" data-msg="Restore in progress">
+            
+        </div>
+        <center id="confirmRestoreMain">
+            <h1>Confirm Restore</h1>
+            <div>
+                Are you sure to retore current filtered data from backup? 
+            </div>
+            <div>
+                <input type="button" value="Yes" onclick="restoreConfirmed()">
+                <input type="button" value="No" onclick="hide('confirmRestore')">
+            </div>
+            
+        </center>
+    </div>
+</div>
+<div id="confirmPurge" style="display:none;" class="modal-overlay">
+    <div class="modal-box">
+        <div id="confirmPurgeLoader" class="loader" data-msg="Permanent Backup deletion in progress">
+            
+        </div>
+        <center id="confirmPurgeMain">>
+            <h1>Confirm Purge</h1>
+            <div>
+                Are you sure to delete filtered data from backup permanently? 
+            </div>
+            <div>
+                <input type="button" value="Yes" onclick="purgeConfirmed()">
+                <input type="button" value="No" onclick="hide('confirmPurge')">
+            </div>
+            
+        </center>
+    </div>
+</div>
+<div id="backupRestoreMsg" style="display:none;" class="modal-overlay">
+    <div class="modal-box">
+        <center>
+            <h3><span id="backRestMsgStatus"></span> <span id="backOrRest"></span> </h3>
+            <div id="backResMessage"></div>
+            <input type="button" value="Ok" onclick="hide('backupRestoreMsg')">
+        </center>
+    </div>
+</div>
+<script>
+    
+function backupData() {
+    show("confirmBackup") 
+    
+}
+
+function backupConfirmed() {
+    hide("confirmBackupMain") 
+    show("confirmBackupLoader") ;
+    google.script.run
+        .withSuccessHandler(backupFeedback)
+        .withFailureHandler(backupFail) 
+        .backup(filters);
+}
+
+function searchInBackup() {
+    loaded(false) 
+    currentPageIndex++
+    google.script.run
+        .withSuccessHandler(renderPage(currentPageIndex))
+        .withFailureHandler(backupSearchFail) 
+        .backupSearch(filters);
+}
+
+function restoreData() {
+    show("confirmRestore")
+    
+}
+
+function restoreConfirmed() {
+    hide("confirmRestoreMain")
+    show("confirmRestoreLoader")
+    google.script.run
+        .withSuccessHandler(restoreFeedback)
+        .withFailureHandler(restoreFail) 
+        .restore(filters);
+}
+
+function purgeData() {
+    show("confirmPurge")
+}
+
+function purgeConfirmed() {
+    hide("confirmPurgeMain")
+    show("confirmPurgeLoader")
+    google.script.run
+        .withSuccessHandler(purgeFeedback)
+        .withFailureHandler(purgeFail) 
+        .purge(filters);
+}
+
+function backupFeedback(flag) {
+    getElement("backRestMsgStatus").textContent = "Successful"
+    getElement("backOrRest").textContent = "Backup"
+    getElement("backResMessage").textContent = "Data backed up successfully"
+    hide("confirmBackup")
+    show("backupRestoreMsg") 
+    show("confirmBackupMain") 
+    hide("confirmBackupLoader") ;
+    handleFilter()
+}
+
+function backupFail(e) {
+    getElement("backRestMsgStatus").textContent = "Unsuccessful"
+    getElement("backOrRest").textContent = "Backup"
+    getElement("backResMessage").textContent = e.message
+    hide("confirmBackup")
+    show("backupRestoreMsg")
+    show("confirmBackupMain") 
+    hide("confirmBackupLoader") ;
+}
+
+function backupSearchFail(e) {
+    getElement("backRestMsgStatus").textContent = "Unsuccessful"
+    getElement("backOrRest").textContent = "Backup search"
+    getElement("backResMessage").textContent = e.message
+    show("backupRestoreMsg")
+    renderPage(currentPageIndex)({data:[]}) 
+    loaded(true) 
+}
+
+function restoreFeedback(flag) {
+    getElement("backRestMsgStatus").textContent = "Successful"
+    getElement("backOrRest").textContent = "Restore"
+    getElement("backResMessage").textContent = "Data restored successfully"
+    hide("confirmRestore")
+    show("backupRestoreMsg")
+    show("confirmRestoreMain")
+    hide("confirmRestoreLoader")
+    handleFilter()
+}
+
+function restoreFail(e) {
+    getElement("backRestMsgStatus").textContent = "Unsuccessful"
+    getElement("backOrRest").textContent = "Restore"
+    getElement("backResMessage").textContent = e.message
+    hide("confirmRestore")
+    show("backupRestoreMsg")
+    show("confirmRestoreMain")
+    hide("confirmRestoreLoader")
+}
+
+function purgeFeedback(flag) {
+    getElement("backRestMsgStatus").textContent = "Successful"
+    getElement("backOrRest").textContent = "Purge"
+    getElement("backResMessage").textContent = "Permanently data deleted successfully"
+    hide("confirmPurge")
+    show("backupRestoreMsg")
+    show("confirmPurgeMain")
+    hide("confirmPurgeLoader")
+    handleFilter()
+}
+
+function purgeFail(e) {
+    getElement("backRestMsgStatus").textContent = "Unsuccessful"
+    getElement("backOrRest").textContent = "Purge"
+    getElement("backResMessage").textContent = e.message
+    hide("confirmPurge")
+    show("backupRestoreMsg")
+    show("confirmPurgeMain")
+    hide("confirmPurgeLoader")
+}
+
+</script>

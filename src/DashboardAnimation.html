@@ -1,0 +1,26 @@
+<script>
+const screens = <?!= JSON.stringify(screens) ?>;
+var screen = <?!= JSON.stringify(screen) ?>;
+var screenUrl = <?!= JSON.stringify(screenUrl) ?>;
+
+let currentIndex = 0;
+const totalPanels = screens.length;
+
+function updatePanels() {
+  for (let i = 0; i < totalPanels; i++) {
+    const panel = document.getElementById(`${screens[i]}`);
+    
+    // Clear previous state classes
+    panel.classList.remove('active', 'left', 'right');
+
+    if (i === currentIndex) {
+      panel.classList.add('active');
+    } else if (i < currentIndex) {
+      panel.classList.add('left');
+    } else {
+      panel.classList.add('right');
+    }
+  }
+}
+
+</script>

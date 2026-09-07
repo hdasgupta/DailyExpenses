@@ -1,0 +1,322 @@
+    <script>
+const today = <?!= JSON.stringify(today) ?> ;
+const stakeholders = <?!= JSON.stringify(stakeholders) ?> ;
+const availableFilters = <?!= JSON.stringify(availableFilters) ?> ;
+const options = <?!= JSON.stringify(options) ?> ;
+
+const months = options.month.map((obj)=> obj.label)
+
+window.addEventListener('DOMContentLoaded', function() {
+
+    const selects = document.querySelectorAll('.custom-select');
+   
+    window.addEventListener('click', function (event) {
+        selects.forEach((select)=> {
+            if (!select.contains(event.target)) {
+                const optionContainer = select.querySelector(".options-container")
+              optionContainer.classList.remove('active');
+             }
+        })
+    
+  });
+  
+    selects.forEach((select)=> {
+       
+       
+       const onChange = select.dataset.change
+       const optionContainer = select.querySelector(".options-container")
+       const selectBox = select.querySelector(".select-box")
+       const options = optionContainer.querySelectorAll(".option")
+       
+       select.dataset["selectedIndex"] =  -1
+       
+       selectBox.addEventListener("click", getToggleDropdown(optionContainer));
+       options.forEach((option, index)=>{
+           option.addEventListener("click", getOptionClickListener(option, index)) 
+       })
+
+        const observer = new         MutationObserver((mutationsList) => {
+        for (const mutation of mutationsList) {
+            if (mutation.type === 'attributes') {
+                const attributeName = mutation.attributeName;
+                const newValue = select.getAttribute(attributeName);
+                const options = optionContainer.querySelectorAll(".option")
+                
+                selectBox.textContent= options[Number(newValue)].textContent
+                try {
+                   new Function(onChange)()
+               } catch(e) {
+                   
+               }
+                console.log(`Attribute ${attributeName} changed to: ${newValue}`);
+                console.log('Updated dataset:', select.dataset);
+            }
+        }
+    });
+
+
+    observer.observe(select, {
+        attributes: true,
+        attributeFilter: ['data-selected-index']
+    });
+    
+    select.dataset.selectedIndex = 0
+  })
+  
+  
+  const loaders = document.querySelectorAll('.loader');
+  
+  
+  loaders.forEach((loader)=> {
+  
+      const img = document.createElement("img") 
+      const div = document.createElement("div")  
+      
+      img.src="<?= notes.WaitImage ?>" 
+      
+      img.alt=loader.dataset.msg || "Please wait... Loading. "
+       
+      div.textContent="Please wait... "+(loader.dataset.msg || "Loading...") 
+      
+      loader.appendChild(img)
+      loader.appendChild(div)
+      
+      loader.style.textAlign="center"
+      hide(loader.id) 
+  }) 
+});
+
+function getToggleDropdown(optionContainer) {
+    return function(event) {
+        //event.stopPropagation()
+           optionContainer.classList.toggle('active');
+    }
+}
+
+function getOptionClickListener(option, index) {
+    const optionContainer = option.parentElement
+    const select = optionContainer.parentElement
+    const selectBox = select.querySelector(".select-box")
+    const onChange = select.dataset.change
+    return function() {
+           
+       selectBox.textContent= option.textContent;
+       select.dataset.selectedIndex = index
+       getToggleDropdown(optionContainer)()
+       try {
+           new Function(onChange)()
+       } catch(e) {
+                   
+       }
+               
+   }
+}
+
+function getValue(selectId) {
+    const select = getElement(selectId)
+    const optionContainer = select.querySelector(".options-container")
+    
+    const options = optionContainer.querySelectorAll(".option")
+    return options[select.dataset.selectedIndex].dataset.value
+}
+
+function getText(selectId) {
+    const select = getElement(selectId)
+    const optionContainer = select.querySelector(".options-container")
+    
+    const options = optionContainer.querySelectorAll(".option")
+    return options[select.dataset.selectedIndex].textContent.trim()
+}
+
+function setValue(selectId, value) {
+    const select = getElement(selectId)
+    const optionContainer = select.querySelector(".options-container")
+    var found = false
+    const options = optionContainer.querySelectorAll(".option")
+    options. forEach((option, index)=> {
+     
+        if(option.dataset.value == value) {
+            
+            select.dataset.selectedIndex = index
+            found = true
+        }
+    })
+    
+    return found
+}
+       
+<? if(permissions.includes("report")) { ?>
+
+function showReport() {
+    hide("form")
+    hide("content");
+    hide("loader");
+    show("report");
+    currentPage = "report"
+    handleFilter()
+}
+
+function hideReport() {
+    show("form")
+    show("content");
+    hide("report");
+    currentPage = "index"
+    resetCalendar()
+    handleDate("curr")
+}
+
+<? } ?>
+
+function showSaveSuccess() {
+    show("saveSuccess")
+}
+
+function showSaveFailure(message) {
+    getElement("saveFailureMessage").textContent = message;
+    show("saveFailure")
+}
+
+function hideSaveComment() {
+    hide("saveSuccess")
+    hide("saveFailure")
+}
+
+function populateReport() {
+    
+}
+
+
+function updateShare() {
+    clearChildren("share")
+    
+            const text = getShare(share)
+            if(text.length > 0) {
+                for(index in text) {
+                    const div = document.createElement("div");
+                    div.textContent = text[index]
+                    getElement("share").appendChild(div)
+                }
+            } else {
+                getElement("share").textContent = "No Share"
+            }
+       
+                  
+    
+}
+
+
+
+function renderDataFailure(e) {
+    alert(JSON.stringify(e))
+    loaded(true)
+}
+
+function clearOptions(id) {
+    const select = getElement(id);
+    const optionContainer = select.querySelector(".options-container")
+    
+    while(optionContainer.firstChild) {
+        optionContainer.removeChild(optionContainer.firstChild);
+    }
+}
+
+function fillDropDown(id, values) {
+    const select = getElement(id);
+    const optionContainer = select.querySelector(".options-container");
+    
+    clearOptions(id)
+    
+    for(index in values) {
+       
+        const option = document.createElement("div");
+        option.className="option"
+        
+        option.textContent = values[index];
+        optionContainer.appendChild(option);
+        
+        option.dataset.value = values[index];
+       
+        option.addEventListener("click", getOptionClickListener(option, index)) 
+    }
+
+    const selectBox = select.querySelector(".select-box")
+    
+    selectBox.textContent = "Select "+id
+    
+    select.dataset.selectedIndex = 0
+
+}
+
+
+function loaded(complete) {
+    visible("loader", !complete)
+    visible("content", complete)
+}
+
+function toProperCase(str) {
+    return str.toLowerCase().replace(
+        /(?:^|\s)\S/g,
+        function(match) {
+            return match.toUpperCase();
+        }
+    );
+}
+
+function getElement(id) {
+    const element = document.getElementById(id);
+
+    if(!element) {
+        console.log(`Element with ${id} does not exists`);
+        //alert(`Element with '${id}' does not exists. ${JSON.stringify(new Error().stack)}`);
+    }
+
+    return element;
+}
+
+function visible(id, option) {
+    if(option) {
+        if(getElement(id).className.split(" ").includes("modal-overlay")) {
+            getElement(id).style.display = "flex"
+        /*} else if(getElement(id).className.split(" ").includes("loader")) {
+            getElement(id).style.display = "block"*/
+        } else {
+            getElement(id).style.display = ""
+        }
+    } else {
+        getElement(id).style.display = "none"
+    }
+}
+
+function show(id) {
+   
+    visible(id, true);
+}
+
+function hide(id) {
+    visible(id, false);
+}
+
+function set(id, value) {
+    getElement(id).value = value;
+}
+
+function get(id) {
+    return getElement(id).value;
+}
+
+function clearChildren(id) {
+    const parentElement = getElement(id);
+    while(parentElement.firstChild) {
+        parentElement.removeChild(parentElement.firstChild);
+    }
+}
+
+function toYYYYMMDDFormat(date) {
+    return date.toISOString().split('T')[0];
+}
+
+function isEmpty(obj) {
+    return Object.keys(obj).length === 0;
+}
+    </script>
+  

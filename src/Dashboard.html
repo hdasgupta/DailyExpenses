@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sticky Table Header and Column</title>
+  <?!= include("DashboardStyles") ?>
+</head>
+<body style="font-size: 32px">
+    
+<div class="app-layout">
+  <header class="header">
+    <?!= include("Header") ?>
+  </header>
+
+  <? if(permissions.includes("report")) { ?>
+  
+  <?!= include("DashboardAnimation") ?>
+  <?!= include("DashboardScript") ?>
+  
+  <div class="carousel-container">
+  <?!= include("DashboardHome") ?>
+  <?!= include("DashboardSummary") ?>
+  <?!= include("DashboardDetail") ?>
+  </div>
+  <? } else { ?>
+  You have no access to this page
+  <? } ?>
+</div>
+
+</body>
+</html>

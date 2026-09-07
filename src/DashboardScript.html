@@ -1,0 +1,314 @@
+<script>
+ window.onerror = function(message, source, lineno, colno, error) {
+  if (error && error.stack) {
+    alert("Full Stack Trace:\n"+ error.stack);
+  } else {
+    alert(`Error: ${message} at ${source}:${lineno}:${colno}`);
+  }
+  return false;
+}; 
+
+
+const dashboards = <?!= JSON.stringify(dashboards) ?>;
+const preloadData = <?!= JSON.stringify(preloadData) ?>;
+const dashboardUrls = {}
+
+<? for(c of cls) { ?>
+<?!= c ?>
+<? }
+
+for(variable in vars) { ?>
+globalThis["<?= variable ?>"] = <?!= JSON.stringify(vars[variable]) ?>;
+<? }
+
+for(func of funcs) { ?>
+<?!= func ?>
+<? } ?>
+
+window.addEventListener(
+    'DOMContentLoaded', 
+    function() {
+      
+        initializeVariables()
+        
+        preloadAll()
+        
+    });
+
+ 
+function getFunctionReference(str) {
+    const match = str?.match(/function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(/);
+    
+    const functionName = match ? match[1].trim():  undefined
+    
+    let func =  functionName ? globalThis[functionName]: undefined; 
+    
+    return func
+}
+
+function initializeVariables() {
+    Object.keys(availableFilters).forEach((key) =>{
+        availableFilters[key].checker = getFunctionReference(availableFilters[key].checker)
+     
+        availableFilters[key].toString = getFunctionReference(availableFilters[key].toString)
+    }) 
+
+    columns.forEach((column) =>{
+        column.func = getFunctionReference(column.func)
+     
+        column.reverseFunc = getFunctionReference(column.reverseFunc)
+    }) 
+
+    Object.keys(groupByColumns).forEach((key) =>{
+        groupByColumns[key].extract = getFunctionReference(groupByColumns[key].extract)
+     
+        groupByColumns[key].process = getFunctionReference(groupByColumns[key].process)
+    }) 
+
+    Object.keys(summaries).forEach((key) =>{
+        summaries[key].extractor = getFunctionReference(summaries[key].extractor)
+     
+        summaries[key].summarizer.reducer = getFunctionReference(summaries[key].summarizer.reducer)
+    
+        summaries[key].summarizer.finalFunc = getFunctionReference(summaries[key].summarizer.finalFunc)
+    }) 
+    
+    Object.keys(ChartType).forEach((key) =>{
+      
+      ChartType[key].generator = getFunctionReference(ChartType[key].generator) 
+      
+
+      }) 
+    
+
+}
+
+function preloadAll() {
+    
+     for(let {key, title, url, filters, sorts, groups, summaries} of dashboards) {
+        
+            const rows = filterRows(preloadData, filters)
+            const data = getTableData(rows, filters, sorts, groups, summaries)
+            
+            dashboardUrls[url] = {
+                key, 
+                title, 
+                url, 
+                filters, 
+                sorts, 
+                groups, 
+                summaries, 
+                ... data
+           } 
+          
+  
+    }
+    
+    if(screenUrl) {
+         renderSummary(screenUrl)
+    }
+    updatePanels() 
+
+}
+
+
+function getTableData(rows, filters, sorts, groups, summaries) {
+         
+    const data = processRows(rows, false) 
+            
+    const groupsArray = processGroupBy(undefined, data, filters, groups,  sorts)
+    
+    const groupRows = {}
+    const removeCols = []
+     groups.forEach((group) => {
+         if(groupByColumns[group].similar) {
+             if(groupByColumns[group].similar) {
+                  removeCols.push(groupByColumns[group].similar) 
+             }
+         }
+     })
+     const cols = columnNames.filter((col) => !removeCols.includes(col)) 
+     
+    groupsArray.groups.forEach((groupPair) => {
+        Object.keys(groupPair).forEach((key) => {
+            const rows = groupPair[key]
+            groupRows[key] = rows.map((rowWithId) => {
+                const rowObj = {}
+                Object.keys(rowWithId).forEach((rowId) => {
+                    const colArr = rowWithId[rowId]
+                    colArr.forEach((colObj) => {
+                        Object. keys(colObj).forEach((colName) => {
+                            rowObj[colName] = colObj[colName]
+                        }) 
+                    }) 
+                }) 
+                
+                return cols.map((colName) => rowObj[colName]) 
+            }) 
+            
+        })
+    }) 
+        
+    const splited = splitGroups(groups)
+        
+    const summaryTable = rowColumnBreakupSummary(groupsArray, sorts, splited.groupsRow, splited.groupsCol, summaries, groups, summaries.length, ChartType.Chart2)
+    
+    const output = {groupHeader: cols, groupRows, summaryTable}
+    
+    return output
+}
+
+/**
+ * Fully programmatic ES6 Sticky Table Generator
+ */
+function createStickyTable({
+  container,
+  rowCount = 30,
+  colCount = 15,
+  freezeRows = 2,
+  freezeCols = 2,
+  mergeCells = [],
+  getCellContent = (r, c) => `R${r}C${c}`
+}) {
+  container.innerHTML = '';
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'sticky-table-wrapper';
+
+  const table = document.createElement('table');
+  table.className = 'sticky-table';
+
+  // 1. Process merged cells and map skipped coordinates
+  const mergeMap = new Map();
+  const skipSet = new Set();
+
+  mergeCells.forEach(({ startRow, startCol, endRow, endCol }) => {
+    mergeMap.set(`${startRow},${startCol}`, {
+      rowspan: endRow - startRow + 1,
+      colspan: endCol - startCol + 1
+    });
+
+    for (let r = startRow; r <= endRow; r++) {
+      for (let c = startCol; c <= endCol; c++) {
+        if (r !== startRow || c !== startCol) {
+          skipSet.add(`${r},${c}`);
+        }
+      }
+    }
+  });
+
+  // Cell creation helper
+  const buildCell = (r, c, isHeader) => {
+    if (skipSet.has(`${r},${c}`)) return null;
+
+    const cell = document.createElement(isHeader ? 'th' : 'td');
+    cell.dataset.row = r;
+    cell.dataset.col = c;
+    cell.innerHTML = getCellContent(r, c);
+
+    // Track matrix parity for dual alternating colors
+    cell.dataset.rowParity = r % 2 === 0 ? 'even' : 'odd';
+    cell.dataset.colParity = c % 2 === 0 ? 'even' : 'odd';
+
+    // Apply rowspan/colspan
+    const merge = mergeMap.get(`${r},${c}`);
+    if (merge) {
+      if (merge.rowspan > 1) cell.rowSpan = merge.rowspan;
+      if (merge.colspan > 1) cell.colSpan = merge.colspan;
+    }
+
+    // Freeze flags
+    const isFrozenRow = r < freezeRows;
+    const isFrozenCol = c < freezeCols;
+
+    if (isFrozenRow || isFrozenCol) {
+      cell.classList.add('sticky-cell');
+      if (isFrozenRow) cell.classList.add('sticky-row');
+      if (isFrozenCol) cell.classList.add('sticky-col');
+      if (isFrozenRow && isFrozenCol) cell.classList.add('sticky-corner');
+    }
+
+    return cell;
+  };
+
+  // 2. Build Header (THEAD)
+  const thead = document.createElement('thead');
+  for (let r = 0; r < freezeRows; r++) {
+    const tr = document.createElement('tr');
+    tr.dataset.row = r;
+    for (let c = 0; c < colCount; c++) {
+      const cell = buildCell(r, c, true);
+      if (cell) tr.appendChild(cell);
+    }
+    thead.appendChild(tr);
+  }
+  table.appendChild(thead);
+
+  // 3. Build Body (TBODY)
+  const tbody = document.createElement('tbody');
+  for (let r = freezeRows; r < rowCount; r++) {
+    const tr = document.createElement('tr');
+    tr.dataset.row = r;
+    for (let c = 0; c < colCount; c++) {
+      const cell = buildCell(r, c, false);
+      if (cell) tr.appendChild(cell);
+    }
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+
+  wrapper.appendChild(table);
+  container.appendChild(wrapper);
+
+  // 4. Exact Offset Recalculation Engine
+  const updateStickyOffsets = () => {
+    // A. Calculate Top Offsets for Header Rows
+    const theadRows = thead.querySelectorAll('tr');
+    let topAcc = 0;
+
+    for (let r = 0; r < freezeRows; r++) {
+      const rowCells = table.querySelectorAll(`[data-row="${r}"].sticky-row`);
+      rowCells.forEach(cell => {
+        cell.style.top = `${topAcc}px`;
+      });
+
+      if (theadRows[r]) {
+        topAcc += theadRows[r].getBoundingClientRect().height;
+      }
+    }
+
+    // B. Calculate Left Offsets for Frozen Columns
+    for (let c = 0; c < freezeCols; c++) {
+      const colCells = table.querySelectorAll(`[data-col="${c}"].sticky-col`);
+      
+      if (colCells.length > 0) {
+        // Find reference cell to compute width of previous columns
+        const sampleCell = colCells[0];
+        let leftAcc = 0;
+        let prev = sampleCell.previousElementSibling;
+
+        while (prev) {
+          leftAcc += prev.getBoundingClientRect().width;
+          prev = prev.previousElementSibling;
+        }
+
+        colCells.forEach(cell => {
+          cell.style.left = `${leftAcc}px`;
+        });
+      }
+    }
+  };
+
+  // Run calculation immediately after DOM render
+  requestAnimationFrame(() => {
+    updateStickyOffsets();
+  });
+
+  // Keep offsets aligned if container resizes
+  if ('ResizeObserver' in window) {
+    const ro = new ResizeObserver(() => updateStickyOffsets());
+    ro.observe(table);
+  }
+}
+ 
+</script>

@@ -1,0 +1,349 @@
+<div id="chartDialog" style="display: none" class="modal-overlay">
+    <div class="modal-box">
+        
+        
+        
+        <table>
+            <tbody id="chartLoader">
+                <tr>
+                    <td style="text-align: center" colspan="2">
+                        <div  class="loader" id="cLoader" data-msg="Chart is loading">
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+            <tbody id="chartBody">
+                <tr>
+                    <td>
+                        Group
+                    </td>
+                    <td>
+                        <div class="custom-select" id="groupX" data-change="changeGroup2()">
+                            <div class="select-box">Select expenseType</div>
+                            <div class="options-container">
+                
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="text-align: center" colspan="2">
+                        <img src="" id="chart">
+                    
+                    </td>
+                </tr>
+            </tbody>
+            <tbody>
+                <tr>
+                    <td style="text-align: center" colspan="2">
+                        <input type="button" value="Download"
+             onclick="downloadImage()">
+                        <input type="button" value="Close" onclick="hide('chartDialog')">
+                    
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        
+        
+        <div >
+            
+            
+       </div>
+    </div>
+</div>
+<script>
+var currentChartIndex = 0
+var d = null
+var _group = null
+var title = null
+
+
+function showChart() {
+    const _filters = JSON.parse(JSON.stringify(filters));
+    const _sorts = JSON.parse(JSON.stringify(groupSortList));
+    _groups = Array.from(groupByList);
+    const _summaries = Array.from(summaryList);
+    
+    const myChartIndex = ++currentChartIndex;
+  
+    setTitle(_filters) 
+    show("chartLoader") 
+    hide("chartBody") 
+    show("chartDialog") ;
+     show("cLoader") 
+    
+    
+    google.script.run
+        .withFailureHandler(function (e) { alert(e.message) }) 
+        .withSuccessHandler(function(data) {
+            if(myChartIndex!=currentChartIndex) {
+                return;
+            }
+           
+            d = data
+           
+         
+            fillDropDown("groupX", ["None",...getAllGroup2()])
+            
+        }) 
+        .getDataOfFilter(_filters, _sorts, _groups, _summaries, true);
+}
+
+function setTitle(_filters)  {
+     var fil = []
+     for(ftype in _filters) {
+         var filter = _filters[ftype]
+         var r = []
+         for(rIndex in filter) {
+             var row = filter[rIndex]
+             var c = []
+             for(cIndex in row) {
+               var column = row[cIndex]
+               c.push(column.name +"="+column.value) 
+             }
+             r. push(c.join(" and ") ) 
+         }
+         fil. push(ftype+" ("+r.join(" or ")+")") 
+     }
+    title = fil. join(" and ") 
+}
+
+function changeGroup2() {
+    const group2Str = getValue("groupX") 
+    if(group2Str == "None") {
+         getElement("chart").src = getChartImage()
+    } else {
+         getElement("chart").src = getGroupedChartImages(group2Str.split(" / ")) 
+    }
+    hide("chartLoader") 
+    show("chartBody") 
+    
+     
+}
+
+async function downloadImage() {
+    const { jsPDF } = window.jspdf;
+
+  // 1. Fetch image and convert to Data URL (Base64)
+  const response = await fetch(getElement("chart").src);
+  const blob = await response.blob();
+  
+  const reader = new FileReader();
+  reader.readAsDataURL(blob);
+
+  reader.onloadend = function () {
+    const base64Image = reader.result;
+
+    // 2. Load image into an HTMLImageElement to get its dimensions
+    const img = new Image();
+    img.src = base64Image;
+
+    img.onload = function () {
+      const imgWidth = img.width;
+      const imgHeight = img.height;
+
+      // 3. Create PDF matching image orientation and dimensions
+      const orientation = imgWidth > imgHeight ? 'l' : 'p';
+      const pdf = new jsPDF({
+        orientation: orientation,
+        unit: 'px',
+        format: [imgWidth, imgHeight]
+      });
+
+      // 4. Draw image onto PDF and save
+      pdf.addImage(base64Image, 'JPEG', 0, 0, imgWidth, imgHeight);
+      pdf.save("Chart.pdf");
+    };
+  };
+}
+
+function getChartImage() {
+  
+   const chart = masterChart(d, _groups)
+   const url = "https://quickchart.io/chart?v=4&c=" + JSON.stringify(chart);
+             
+   return url
+}
+
+function getGroupedChartImages(_xGroups2) {
+  
+   const _xGroups1 = _groups.filter((group) => !_xGroups2.includes(group)) 
+            
+   const chart = generateChart(_xGroups1, _xGroups2)
+   
+   const url = "https://quickchart.io/chart?v=4&c=" + JSON.stringify(chart);
+   
+   return url
+}
+
+function masterChart() {
+    const groupIndices = _groups.map((group) => d.headers.indexOf(group));
+    const expensesIndex = d.headers.indexOf("Sum of expenses");
+    const labels = d.data.map((row) => groupIndices.map((index) => row[index]).join(" / ")) 
+    const label = "Exenses"
+    const data = d.data.map((row) => row[expensesIndex]) 
+    
+    const chart = {
+        type: "bar", 
+        data: {
+            labels, 
+            datasets:[
+               {
+                    label, 
+                    data
+                }
+            ], 
+            options: {
+            
+                plugins: {
+                    title: {
+                    display: true,
+                    text: title,
+                     "align": "center",
+        "position": "top",
+                }, 
+                    datalabels: {
+                        anchor: 'end',
+                        align: 'top'
+                    }, 
+                    
+                }, 
+                
+                "scales": {
+      "y": {
+        "title": {
+          "display": true,
+          "text": " Expenses in Rs."
+        }
+      }
+    }
+            }
+          
+        }
+    }
+    return chart
+}
+
+
+
+function generateChart(_groups1, _groups2) {
+   const labels = []
+   const obj = {}
+   
+   const groupIndices1 = _groups1.map((group) => d.headers.indexOf(group));
+   const groupIndices2 = _groups2.map((group) => d.headers.indexOf(group));
+   const expenseIndex = d.headers.indexOf("Sum of expenses");
+   
+   d.data.forEach((row) => {
+      const group1 = groupIndices1.map((index) => row[index]).join(" / ")
+      const group2 = groupIndices2.map((index) => row[index]).join(" / ")
+      const expense = row[expenseIndex]
+      
+      if(!labels.includes(group2)) {
+          labels.push(group2)
+      }
+      const group2Index = labels.indexOf(group2) 
+      if(!(group1 in obj)) {
+         obj[group1] = []
+      }
+      
+      obj[group1][group2Index] = expense;
+      
+   }) ;
+   
+   const datasets = Object.keys(obj).map((label) => {
+       var dataset 
+       for(index in labels) {
+           if(obj[label][index] == undefined) {
+               obj[label][index] = 0
+           }
+       }
+       dataset = {
+           label, 
+           data: obj[label]
+       }
+       
+       return dataset;
+   }) ;
+   
+   const chart = {
+      type: "bar", 
+      data: {
+          labels, 
+          datasets
+        }, 
+        options: {
+        
+            plugins: {
+                title: {
+                  display: true,
+                  text: title,
+                   "align": "center",
+        "position": "top",
+               }, 
+                datalabels: {
+                    anchor: 'end',
+                    align: 'top'
+                }, 
+                "scales": {
+      "y": {
+        "title": {
+          "display": true,
+          "text": " Expenses in Rs."
+        }
+      }
+    }
+           }, 
+            
+        }
+   }
+   
+   return chart
+}
+
+function getAllGroup2() {
+    return partition().map((part) => part.join(" / ")).sort() 
+}
+    
+function getPermutations(arr) {
+  if (arr.length === 0) return [[]];
+  
+  const result = [];
+  for (let i = 0; i < arr.length; i++) {
+    const current = arr[i];
+    const remaining = [...arr.slice(0, i), ...arr.slice(i + 1)];
+    const remainingPerms = getPermutations(remaining);
+    
+    for (const perm of remainingPerms) {
+      result.push([current, ...perm]);
+    }
+  }
+  return result;
+}
+
+function partition() {
+  if (_groups.length < 2) {
+    return []; // An array with less than 2 elements cannot be split into two non-empty arrays
+  }
+
+  const permutations = getPermutations(_groups);
+  const partitions = new Set();
+
+  for (const perm of permutations) {
+    // Split the permutation at every index from 1 to N - 1
+    for (let i = 1; i < perm.length; i++) {
+      const left = perm.slice(0, i);
+      const right = perm.slice(i);
+      partitions.add(JSON.stringify(left.sort()));
+      partitions.add(JSON.stringify(right.sort())) 
+    }
+  }
+  
+  return [... partitions].map((part) => JSON.parse(part)) 
+
+ 
+}
+
+
+</script>

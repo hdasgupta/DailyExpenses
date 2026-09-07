@@ -1,0 +1,217 @@
+<div id="calendar" style="display: none" class="modal-overlay">
+        <div class="modal-box">
+            <table>
+                <thead>
+                    <tr>
+                        <th colspan="2">
+                            
+                            <input type="button" value="<<" onclick="addYear(-1)">
+                        </th>
+                        <th colspan="3" style="text-align: center">
+                            <input type="hidden" id="currYear">
+                            <div id="calendarYear"></div>
+                        </th>
+                        <th colspan="2" style="text-align: right">
+                            
+                            <input type="button" value=">>" onclick="addYear(1)">
+                        </th>
+                    </tr>
+                    <tr>
+                        <th colspan="2">
+                            
+                            <input type="button" value="<<" onclick="addMonth(-1)">
+                        </th>
+                        <th colspan="3" style="text-align: center">
+                            <input type="hidden" id="currMonth">
+                            <div id="calendarMonth"></div>
+                        </th>
+                        <th colspan="2"style="text-align: right">
+                            
+                            <input type="button" value=">>" onclick="addMonth(1)">
+                        </th>
+                    </tr>
+                    <tr>
+                        
+                        <th style="text-align: center">
+                            Mon
+                        </th>
+                        <th style="text-align: center">
+                            Tue
+                        </th>
+                        <th style="text-align: center">
+                            Wed
+                        </th>
+                        <th style="text-align: center">
+                            Thu
+                        </th>
+                        <th style="text-align: center">
+                            Fri
+                        </th>
+                        <th style="text-align: center">
+                            Sat
+                        </th>
+                        <th style="text-align: center">
+                            Sun
+                        </th>
+                    </tr>
+                    <tr>
+                        <td colspan="7">
+                            <div id="loaderCalendar" class="loader" data-msg="Calender is loading">
+    
+                            </div>
+                            
+                        </td>
+                    </tr>
+                </thead>
+                <tbody id="dates">
+                    
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="7" style="text-align: center">
+                            <input type="button" class="btn btn-cancel" value="Close" onclick="hideCalendar()">
+                            <input id="todayButton" type="button" class="btn btn-confirm" value="Today" onclick="setToday()">
+                        </td>
+                       
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        </div>
+<script>
+var calendarIndex = 0
+
+<? if(permissions.includes("report")) { ?>
+var pages = {
+    index : ["form", "content"], 
+    report: ["report"]
+}
+<? } else { ?>
+var pages = {
+    index : ["form", "content"]
+}
+<? } ?>
+
+var currentPage = "index"
+
+var getDateSelectnFunc = getMainPageDateSelection
+
+<?!= calendar ?>
+
+function populateCalendar(myCalendarIndex) {
+    
+    clearChildren("dates")
+    
+    
+    
+    renderCalender(myCalendarIndex)(
+        calendar(
+            Number(get("currMonth")),     
+            Number(get("currYear"))
+        )
+    ) 
+    
+}
+
+function resetCalendar() {
+    const t = new Date(today.today);
+    getDateSelectnFunc = getMainPageDateSelection
+    updateCurrentCalendar(t.getMonth(), t. getFullYear());
+}
+
+function setToday() {
+    getDateSelectnFunc({
+        prev: today.yest, 
+        date: today.today, 
+        next: today.tomm
+    })()
+    
+}
+
+function updateCurrentCalendar(month, year) {
+    set("currYear", year)
+    set("currMonth", month)
+    getElement("calendarYear").textContent = year;
+    getElement("calendarMonth").textContent = months[month];
+    show("loaderCalendar")
+    
+    calendarIndex++;
+    populateCalendar(calendarIndex)
+}
+
+function addMonth(offset) {
+    const newMonth = Number(get("currMonth")) + offset;
+    const year = Number(get("currYear"));
+        if(newMonth < 0) {
+        updateCurrentCalendar(11, year - 1);
+    } else if (newMonth > 11) {
+        updateCurrentCalendar(0, year + 1);
+    } else {
+        updateCurrentCalendar(newMonth, year);
+    }
+}
+
+function addYear(offset) {
+    const month = Number(get("currMonth"));
+    const year = Number(get("curretYear")) + offset;
+    updateCurrentCalendar(month, year);
+}
+
+function showCalendar() {
+    
+    /*for(page in pages) {
+        pages[page].forEach((id)=>hide(id))
+    }*/
+    show("calendar");
+    
+    
+}
+
+function hideCalendar() {
+    for(page in pages) {
+       
+        pages[page].forEach((id)=>{
+           
+            visible(id, page == currentPage)
+          
+        }) 
+    }
+    hide("calendar");
+}
+
+function renderCalender(myCalendarIndex) {
+    return function(cal) {
+        if(myCalendarIndex != calendarIndex) {
+            return
+        }
+        clearChildren("dates");
+        hide("loaderCalendar")
+        for(row in cal.dates) {
+            const tr = document.createElement("tr");
+            for(col in cal.dates[row]) {
+                const td = document.createElement("td");
+                td.style.textAlign="center"
+                if(!isEmpty(cal.dates[row][col])) {
+                    const input = document.createElement("input");
+                    input.type = "button";
+                    input.value = cal.dates[row][col].day
+                
+                    input.addEventListener('click',  getDateSelectnFunc(cal.dates[row][col]));
+                
+                    if(cal.dates[row][col].currDay == today.today) {
+                        input.style.backgroundColor= "blue"
+                        input.style.color= "white"
+                    } else if(col==6) {
+                        input.style.backgroundColor= "red"
+                        input.style.color= "white"
+                    }
+                    td.appendChild(input)
+                }
+                tr.appendChild(td)
+            }
+            getElement("dates"). appendChild(tr)
+        }
+    }
+}
+
+</script>        

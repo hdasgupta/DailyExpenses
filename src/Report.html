@@ -1,0 +1,21 @@
+<div id="report" style="display: none">
+    <center>
+        <h2>Report</h2>
+        <?!= include("Sort") ?>
+        <?!= include("Filter") ?>
+        <?!= include("GroupBy") ?>
+        <?!= include("Summary") ?>
+        <?!= include("GroupSort") ?>
+        <?!= include("Download") ?>
+        <?!= include("SaveFilter") ?>
+        <?!= include("ManageFilter") ?>
+        <?!= include("Chart") ?>
+        
+        <? if(permissions.includes("admin")) { ?>
+        <?!= include("Admin") ?>
+        <? } ?>
+        
+        <?!= include("Applied") ?>
+      
+    </center>
+</div>

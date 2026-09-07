@@ -1,0 +1,492 @@
+<center id="form">
+    <form>
+        <table>
+            <tbody>
+                <? if(permissions.includes("report")) { ?>
+                <tr>
+                    <td colspan="3" style="text-align: center">
+                        <input type="button" value="Show Report" class="btn" onclick="showReport()" />
+                    </td>
+                </tr>
+                <? } ?>
+
+                <tr>
+                    <td colspan="3" style="text-align: center">
+                        <h2>
+                            <? if(permissions.includes("edit") || permissions.includes("simple")) { ?> Add <? } else {
+                            ?> View <? } ?> Data
+                        </h2>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td width="20%">
+                        <input type="hidden" id="prev" value="<?= today.yest ?>" />
+                        <? if(!permissions.includes("edit")) { ?>
+                        <input type="button" value="<< Prev" class="btn" onclick="handleShareOf('prev')" />
+                        <? } else { ?>
+                        <input type="button" value="<< Prev" class="btn" onclick="handleDate('prev')" />
+                        <? } ?>
+                    </td>
+                    <td width="60%" style="text-align: center">
+                        <input type="hidden" id="curr" value="<?= today.today ?>" />
+                        <span id="date">Today</span>
+
+                        <input type="button" value="Choose" class="btn" onclick="showCalendar()" />
+                    </td>
+                    <td width="20%" style="text-align: right">
+                        <input type="hidden" id="next" value="<?= today.tomm ?>" />
+                        <? if(!permissions.includes("edit")) { ?>
+                        <input type="button" value="Next >>" class="btn" onclick="handleShareOf('next')" />
+                        <? } else { ?>
+                        <input type="button" value="Next >>" class="btn" onclick="handleDate('next')" />
+                        <? } ?>
+                    </td>
+                </tr>
+                <? if(permissions.includes("view") || permissions.includes("simple")) { ?>
+                <tr>
+                    <td style="text-align: right">Share of</td>
+                    <td colspan="2">
+                        <div class="custom-select" id="shareOf" data-change="handleShareOf('curr')">
+                            <div class="select-box">Select shareOf</div>
+                            <div class="options-container">
+                                <div class="option" data-value="All">All</div>
+                                <? const stakeholders = getStakeholders(); for(index in stakeholders) { const
+                                stakeholder = stakeholders[index]; ?>
+                                <div class="option" data-value="<?= stakeholder ?>"><?= stakeholder ?></div>
+                                <? } ?>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+
+                <? } ?> <? if(permissions.includes("edit")) { ?>
+                <tr>
+                    <th style="text-align: right">Share</th>
+                    <td id="share">No Share</td>
+                    <td>
+                        <input type="button" value="Edit" onclick="handleShare()" />
+                    </td>
+                </tr>
+                <? } ?>
+            </tbody>
+            <tbody id="editable">
+                <? if(permissions.includes("edit")||permissions.includes("simple") ) { ?>
+                <tr>
+                    <th style="text-align: right">Category</th>
+                    <td colspan="2">
+                        <div class="custom-select" id="category" data-change="handleCategory()">
+                            <div class="select-box">Select category</div>
+                            <div class="options-container">
+                                <? const categories = getCategories(); for(index in categories) { const category =
+                                categories[index]; ?>
+                                <div class="option" data-value="<?= category ?>"><?= category ?></div>
+                                <? } ?>
+                            </div>
+                        </div>
+                        
+                    </td>
+                </tr>
+                <? }  
+                if(permissions.includes("edit")) { ?>
+                <tr id="itemRow">
+                    <th style="text-align: right">Item</th>
+                    <td colspan="2">
+                        <div class="custom-select" id="item" data-change="handleItem()">
+                            <div class="select-box">Select item</div>
+                            <div class="options-container"></div>
+                        </div>
+                    </td>
+                </tr>
+                <tr id="otherItemRow" style="display: none">
+                    <th style="text-align: right">Other item</th>
+                    <td colspan="2">
+                        <input type="text" id="otherItem" />
+                    </td>
+                </tr>
+                <tr id="qtyRow">
+                    <th style="text-align: right">Qty</th>
+                    <td colspan="2">
+                        <input type="number" id="qty" />
+                    </td>
+                </tr>
+                <tr id="unitRow">
+                    <th style="text-align: right">Unit</th>
+                    <td colspan="2">
+                        <div class="custom-select" id="unit" data-change="handleUnit()">
+                            <div class="select-box">Select unit</div>
+                            <div class="options-container">
+                                <? const units = getUnits(); for(index in units) { const unit = units[index]; ?>
+                                <div class="option" data-value="<?= unit ?>"><?= unit ?></div>
+                                <? } ?>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr id="otherUnitRow" style="display: none">
+                    <th style="text-align: right">Other unit</th>
+                    <td colspan="2">
+                        <input type="text" id="otherUnit" />
+                    </td>
+                </tr>
+                <? }  
+                if(!permissions.includes("view")) { ?>
+                <tr>
+                    <th style="text-align: right">Expense</th>
+                    <td colspan="2">₹ <input type="number" id="price" /></td>
+                </tr>
+                <? }  
+                if(permissions.includes("edit")) { ?>
+                <tr>
+                    <th style="text-align: right">Type</th>
+                    <td colspan="2">
+                        <div class="custom-select" id="expenseType" data-change="">
+                            <div class="select-box">Select expenseType</div>
+                            <div class="options-container">
+                                <? const expenseTypes = getExpenseTypes(); for(index in expenseTypes) { const
+                                expenseType = expenseTypes[index]; ?>
+                                <div class="option" data-value="<?= expenseType ?>"><?= expenseType ?></div>
+                                <? } ?>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <? } 
+                if(!permissions.includes("view")) { ?>
+                <tr>
+                    <th style="text-align: right">Comment</th>
+                    <td colspan="2">
+                        <input type="text" id="comment" />
+                    </td>
+                </tr>
+                <tr>
+                    <th style="text-align: right">Proof</th>
+                    <td colspan="2">
+                        <input type="file" id="proof" accept="image/jpeg" />
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="3" style="text-align: center">
+                        <input type="hidden" id="rowId" />
+                        <input type="button" value="Reset" style="background-color: lightred" onclick="resetForm()" />
+                        <input
+                            class="btn"
+                            type="button"
+                            value="Add"
+                            id="addBtn"
+                            style="background-color: lightgreen"
+                            onclick="handleSave()"
+                        />
+                    </td>
+                </tr>
+                <tr id="saveSuccess" style="display: none">
+                    <td colspan="3" style="text-align: center; color: green">Successfully Added/Updated.</td>
+                </tr>
+                <tr id="saveFailure" style="display: none">
+                    <td colspan="3" style="text-align: center; color: red" id="saveFailureMessage">
+                        Error: unable to add row
+                    </td>
+                </tr>
+
+                <? } ?>
+            </tbody>
+        </table>
+    </form>
+</center>
+<script>
+    
+    var currentPageIndex = 0
+    var currentItemRenderIndex = 0
+    var itemLoaded = undefined
+    window.addEventListener('DOMContentLoaded', loadData);
+
+    function loadData() {
+      
+      <? if(permissions.includes("simple")||permissions.includes("view")) { ?>
+       
+        handleShareOf('curr')
+      <? } else if(permissions.includes("report") && !permissions.includes("view") && !permissions.includes("simple")) { ?>
+          showReport()
+
+      <? } else if(permissions.includes("edit")) { ?>
+
+        handleDate("curr")
+
+      <? } ?>
+
+        resetCalendar()
+    }
+
+    <?!= getDates ?>
+    <?!= getShare ?>
+    <?!= verify ?>
+
+    function getMainPageDateSelection(calObj) {
+        return function() {
+            setDates(calObj) 
+            hideCalendar();
+
+            <? if(!permissions.includes("edit")) { ?>
+                handleShareOf('curr')
+            <? } else { ?>
+                handleDate("curr")
+            <? } ?>
+
+        }
+    }
+    
+    function setDates(dates) {
+        console.log(JSON.stringify(dates)) 
+        set("prev", dates.prevDay);
+            set("curr", dates.currDay);
+            switch(dates.currDay) {
+                case today.yest:
+                    getElement("date").textContent = "Yesterday";
+                    break;
+
+                case today.today:
+                    getElement("date").textContent = "Today";
+                    break;
+                case today.tomm:
+                    getElement("date").textContent = "Tomorrow";
+                    break;
+
+                default:
+                    getElement("date").textContent = dates.currDay;
+
+            }
+            set("next", dates.nextDay)
+    }
+    function updateDates(id) {
+    const dates = getDates(get(id)) 
+        
+        setDates(dates) 
+
+    }
+
+    function handleDate(id) {
+
+        loaded(false)
+        
+        
+        google.script.run
+            .withSuccessHandler(renderPage(++currentPageIndex))
+            .withFailureHandler(renderDataFailure)
+            .getDataOf(get(id));
+    }
+
+    function handleCategory() {
+        <? if(permissions.includes("edit")) { ?>
+        show("itemRow");
+
+        google.script.run
+            .withSuccessHandler(renderItem(currentItemRenderIndex))
+            .getItems(getValue("category"));
+
+        <? } ?>
+    }
+
+    function handleItem() {
+        visible("otherItemRow", getValue("item") == "Other")
+        visible("qtyRow", getValue("item") != "Total");
+        visible("unitRow", getValue("item") != "Total");
+        visible("otherUnitRow", getValue("item") != "Total");
+    }
+
+    function handleUnit() {
+        visible("otherUnitRow", getValue("unit") == "Other")
+    }
+
+    function handleSave() {
+        try {
+        loaded(false)
+        hideSaveComment()
+
+
+        fileToBase64("proof", function(base64) {
+            try {
+                const message = verify(
+                <? if(permissions.includes("simple")) { ?>
+                        getValue("shareOf") + "|100%"
+                        <? } else { ?>
+                        getShare(share, true).join(",")
+                        <? } ?>,
+                    <? if(permissions.includes("simple")) { ?>
+                        "Total"
+                        <? } else { ?>
+                        getValue("item") == "Other" ? get("otherItem") : getValue("item")
+                        <? } ?>,
+                    <? if(permissions.includes("simple")) { ?>
+                        ""
+                        <? } else { ?>
+                        getValue("item") == "Total" ? "" : get("qty")
+                        <? } ?>,
+                    <? if(permissions.includes("simple")) { ?>
+                        ""
+                        <? } else { ?>
+                        getValue("item") == "Total" ? "":(getValue("unit") == "Other" ? get("otherUnit") : getValue("unit"))
+                        <? } ?>,
+                    get("price")
+                )
+                google.script.run
+                    .withSuccessHandler(renderSave)
+                    .withFailureHandler(handleError)
+                    .save(
+                        get("rowId"),
+                        get("curr"),
+                        <? if(permissions.includes("simple")) { ?>
+                        getValue("shareOf") + "|100%"
+                        <? } else { ?>
+                        getShare(share, true).join(",")
+                        <? } ?>,
+                        getValue("category"),
+                        <? if(permissions.includes("simple")) { ?>
+                        "Total"
+                        <? } else { ?>
+                        getValue("item") == "Other" ? get("otherItem") : getValue("item")
+                        <? } ?>,
+                        <? if(permissions.includes("simple")) { ?>
+                        ""
+                        <? } else { ?>
+                        getValue("item") == "Total" ? "" : get("qty")
+                        <? } ?>,
+                        <? if(permissions.includes("simple")) { ?>
+                        ""
+                        <? } else { ?>
+                        getValue("item") == "Total" ? "":(getValue("unit") == "Other" ? get("otherUnit") : getValue("unit"))
+                        <? } ?>,
+                        get("price"),
+                        <? if(permissions.includes("simple")) { ?>
+                        "Online"
+                        <? } else { ?>
+                        getValue("expenseType")
+                        <? } ?>,
+                        get("comment"),
+                        base64
+                    );
+
+            } catch(e) {
+                alert(e.message)
+            }
+        })
+
+        } catch(e) {
+            alert(e.message)
+        }
+    }
+
+    function handleError(error) {
+        alert("Execution failed:", error.message);
+    }
+
+    function handleShareOf(id) {
+
+        loaded(false)
+        updateDates(id) 
+        const filterObj = {
+            "Date": [[{value: get(id)}]],
+        }
+
+       
+        if(getValue("shareOf") != "All") {
+            filterObj["Stakeholder"] = [[{value: getValue("shareOf")}]]
+            show("editable")
+        } else {
+            hide("editable")
+        }
+        google.script.run
+            .withSuccessHandler(renderPage(++currentPageIndex))
+            .withFailureHandler(renderDataFailure)
+            .getDataOfFilter(filterObj, [], [], []);
+    }
+
+    function renderSave(message) {
+
+        if(!message) {
+            loaded(false)
+            <? if(!permissions.includes("edit")) { ?>
+                handleShareOf('curr')
+            <? } else { ?>
+                handleDate("curr")
+            <? } ?>
+            showSaveSuccess()
+            resetForm();
+        } else {
+            loaded(true)
+            showSaveFailure(message)
+        }
+        setTimeout(hideSaveComment, 25000);
+
+    }
+
+    function resetForm() {
+        <? if(permissions.includes("simple")) { ?>
+        set("price", "")
+        set("comment", "")
+        set("proof", "")
+        set("rowId", "")
+        set("addBtn", "Add")
+        <? } else { ?>
+        share = [];
+        clearChildren("portion")
+        clearChildren("share");
+        getElement("share").textContent = "No Share";
+
+        getElement("category").dataset.selectedIndex = 0
+        handleCategory()
+
+        hide("otherItemRow");
+        set("otherItem", "")
+        set("qty", "")
+        getElement("unit").selectedIndex = 0
+        set("price", "")
+        hide("otherUnitRow");
+        set("otherUnit", "")
+        set("comment", "")
+        set("proof", "")
+        set("rowId", "")
+        set("addBtn", "Add")
+        itemLoaded = undefined
+        <? } ?>
+
+    }
+
+
+
+
+    function renderCategory(options) {
+        fillDropDown("category", options);
+
+        //handleCategory();
+    }
+
+    function renderItem(myItemRenderIndex) {
+        return function(options) {
+
+            if(myItemRenderIndex != currentItemRenderIndex) {
+                return;
+            }
+
+            fillDropDown("item", options);
+
+            if(itemLoaded) {
+                itemLoaded()
+            }
+        }
+    }
+
+    function renderUnit(options) {
+        fillDropDown("unit", options);
+    }
+
+    function renderExpenseType(options) {
+        fillDropDown("expenseType", options);
+    }
+
+    function renderShareOf(options) {
+
+
+
+        fillDropDown("shareOf", options);
+    }
+</script>

@@ -1,0 +1,154 @@
+<div id="saveFilter" style="display: none" class="modal-overlay">
+    <div class="modal-box">
+        <table>
+            <tbody id="saveFilterLoader">
+                <tr>
+                    <td colspan="3" style="text-align: center">
+                        <div id="svFiltrLoader" class="loader" data-msg="Saving current filter">
+    
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+            <tbody id="saveFilterMain">
+                <tr>
+                    <td>
+                        <h3>Save filter</h3>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        Filter Name: <input type="text" id="filterName">
+                    </td>
+                </tr>
+                <tr>
+                    <td style="text-align: center">
+                        <input type="button" value="Close" onclick="hide('saveFilter')">
+                        <input type="button" value="Save" onclick="confirmDuplicate()">
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<div id="duplicateCheck" style="display: none" class="modal-overlay">
+    <div class="modal-box">
+        <table>
+            <tbody>
+                <tr>
+                    <td>
+                        <h3>Duplicate check</h3>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        Do you want to overwrite filter "<span id="originalName"></span>" or want to use a alternative duplicate name "<span id="duplicateName"></span>"? 
+                    </td>
+                </tr>
+                <tr>
+                    <td style="text-align: center">
+                        <input type="hidden" id="overwrite">
+                        <input type="hidden" id="alternative">
+                        <input type="button" value="Close" onclick="hide('duplicateCheck')">
+                        <input type="button" value="Overwrite" onclick="overwrite()">
+                        <input type="button" value="Duplicate" onclick="duplicate()">
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<div id="confirmSave" style="display: none" class="modal-overlay">
+    <div class="modal-box">
+        <table>
+            <tbody>
+                <tr>
+                    <td>
+                        <h3>Confirm save</h3>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        "<span id="savedFilterName"></span>" has been saved successfully. 
+                    </td>
+                </tr>
+                <tr>
+                    <td style="text-align: center">
+                        <input type="button" value="Ok" onclick="hide('confirmSave')">
+                        
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<script>
+window.addEventListener(
+    'DOMContentLoaded', 
+    function() {
+      
+      hide("saveFilterLoader")
+      show("svFiltrLoader") 
+      
+});
+function confirmDuplicate() {
+    show("saveFilterLoader")
+    hide("saveFilterMain")
+    google.script.run
+        .withSuccessHandler(confirmSave)
+        .saveReport(
+            get("filterName"), 
+            filters, 
+            groupByList.size == 0?sortList:groupSortList, 
+            [...groupByList], 
+            [...summaryList]
+        );
+}
+
+function confirmSave(obj) {
+    hide("saveFilterLoader")
+    show("saveFilterMain")
+    if(obj.savedName) {
+        getElement("savedFilterName").textContent = obj.savedName
+        hide('saveFilter')
+        show('confirmSave')
+    } else {
+        getElement("originalName").textContent = obj.overwrite
+        getElement("duplicateName").textContent = obj.alternativeName
+        set("overwrite", obj.overwrite)
+        set("alternative", obj.alternativeName)
+        show("duplicateCheck")
+    }
+}
+
+function overwrite() {
+    hide('duplicateCheck')
+    show("saveFilterLoader")
+    hide("saveFilterMain")
+    google.script.run
+        .withSuccessHandler(confirmSave)
+        .saveReport(
+            get("overwrite"), 
+            filters, 
+            groupByList.size == 0?sortList:groupSortList, 
+            [...groupByList], 
+            [...summaryList], 
+            true
+        );
+}
+
+function duplicate() {
+    hide('duplicateCheck')
+    show("saveFilterLoader")
+    hide("saveFilterMain")
+    google.script.run
+        .withSuccessHandler(confirmSave)
+        .saveReport(
+            get("alternative"), 
+            groupByList.size == 0?sortList:groupSortList, 
+            sortList, 
+            [...groupByList], 
+            [...summaryList]
+        );
+}
+</script>

@@ -1,0 +1,137 @@
+<div id="groupAddSort" class="modal-overlay"> 
+<div class="modal-box">
+     <table>
+        <tbody>
+            <tr>
+                <td colspan="2" style="text-align: center">
+                    <h3>Add Sort</h3>
+                </td>
+            </tr>
+            <tr>
+                
+                <td width="20%">
+                    Sort by
+                </td>
+                <td>
+                    <div class="custom-select" id="groupSortBy">
+                        <div class="select-box">Select SortBy</div>
+                        <div class="options-container" id="groupSortByContainer">
+                        
+                        </div>
+                    </div>
+                    
+            
+                </td>
+            </tr>
+            <tr>
+                
+                <td width="20%">
+                    Order
+                </td>
+                <td>
+                    <div id="groupOrder" class="custom-select">
+                        <div class="select-box">Select order</div>
+                        <div class="options-container">
+                        <div class="option" data-value="asc">Ascending</div>
+                        <div class="option" data-value="desc">Descending</div>
+                        </div>
+                    </div>
+                    
+                </td>
+            </tr>
+        
+            <tr>
+                <td style="text-align: center" colspan="2">
+                    <input type="button" onclick="hide('groupAddSort')" value="Close" class="btn ">
+                    <input type="button" onclick="handleGroupAddingSort()" value="Add" class="btn ">
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+</div>
+<script>
+function handleGroupAddingSort() {
+    
+    for(index in groupSortList) {
+       
+        if(Object.keys(groupSortList[index])[0] == getText("groupSortBy")) {
+            groupSortList[index][getText("groupSortBy")] = getValue("groupOrder")
+            hide("groupAddSort")
+            updateGroupSort()
+            handleFilter()
+            return
+        }
+    }
+    const obj = {}
+    obj[getText("groupSortBy")] = getValue("groupOrder")
+    groupSortList.push(obj) 
+    
+    hide("groupAddSort")
+    
+    updateGroupSort()
+    handleFilter()
+    
+}
+
+function removeGroupSort(sortBy) {
+    const newSorts = []
+    for(index in groupSortList) {
+        if(Object.keys(groupSortList[index])[0]!=sortBy) {
+            newSorts.push(groupSortList[index]) 
+        }
+    }
+    groupSortList = newSorts
+    updateGroupSort()
+}
+
+function updateGroupSort() {
+    clearChildren("groupSortList")
+    clearChildren("groupActionList")
+    if(groupSortList.length==0) {
+        getElement("groupSortList").textContent = "No sort"
+    }
+    
+    for(index in groupSortList) {
+        for(sortBy in groupSortList[index]) {
+            
+            const div = document.createElement("div")
+            const span = document. createElement("div")
+            const remove = document. createElement("input")
+            span.style.padding= '10px'
+            span.textContent = sortBy + " ("+groupSortList[index][sortBy]+")"
+            
+            remove.id= "remove_group_"+sortBy
+            remove.value = "Remove"
+            remove.type = "button"
+            remove.style. textAlign = "right"
+            
+            remove.addEventListener('click', function() {
+                removeGroupSort(sortBy)
+                getElement("groupActionList").removeChild(remove.id)
+                handleFilter()
+            })
+            
+            div. appendChild(remove)
+            getElement("groupSortList").appendChild(span)
+            getElement("groupActionList").appendChild(div)
+        }
+       
+    }
+    
+    changeAppliedFiltersVisibility()
+}
+
+function updateGroupSortList() {
+    const groupSortOptions = [...groupByList,...summaryList]
+    
+    clearChildren("groupSortByContainer")
+    
+    fillDropDown("groupSortBy", groupSortOptions) 
+    
+    groupSortList = groupSortList.filter((groupSortBy)=>groupSortOptions.includes(Object.keys(groupSortBy)[0]))
+    
+    updateGroupSort()
+}
+
+</script>

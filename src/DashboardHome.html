@@ -1,0 +1,28 @@
+<div id="home" class="panel active">
+    <h2 style="text-align:center;">Dashboards</h2>
+    <div id="buttons" class="button-grid">
+    </div>
+</div>
+<script>
+window.addEventListener(
+    'DOMContentLoaded', 
+    function() {
+      
+        renderHomeButton()
+        
+    });
+
+function renderHomeButton() {
+    const container = document. getElementById("buttons")
+    container.innerHtml = ""
+    
+    const buttonsHtml =Object.entries(dashboardUrls).map(([url, {title, groupRows}]) => Object.keys(groupRows).length === 0? "":
+    `<button id="${url}" onclick="renderSummary('${url}')">${title}</button>`
+  ).join('');
+  
+  container.innerHTML = buttonsHtml;
+  
+}
+
+
+</script>

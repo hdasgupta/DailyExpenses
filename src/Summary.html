@@ -1,0 +1,107 @@
+
+<div id="addSummary" style="display: none"class="modal-overlay"> 
+<div class="modal-box">
+    <table>
+        <thead>
+            <tr>
+                <td colspan="2" style="text-align: center">
+                    <h3>Add Summary</h3>
+                </td>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    Select Summary
+                </td>
+                <td>
+                    <div class="custom-select" id="summary">
+                        <div class="select-box">Select summary</div>
+                        <div class="options-container">
+                            <? for(summary in summaries) { ?>
+                            <div data-value="<?= summary ?>" class="option">
+                            <?= summary ?>
+                            </div>
+                            <? } ?>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+        <tbody>
+            <tr>
+                <td colspan="2" style="text-align: center">
+                    <input type="button" value="Back" onclick="hideSummary()">
+                    <input type="button" value="Add" onclick="handleAddSummary()">
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    
+</div>
+</div>
+<script>
+var summaryList = new Set()
+
+function showSummary() {
+    show("addSummary")
+}
+
+function hideSummary() {
+    hide("addSummary")
+}
+
+function addSummary(){
+    summaryList.add(getValue("summary"))
+}
+
+function removeSummary(item) {
+    summaryList.delete(item)
+}
+
+function handleAddSummary() {
+    addSummary()
+    hideSummary()
+    updateSummary()
+    handleFilter()
+}
+
+function updateSummary() {
+    
+    clearChildren("summaryList")
+    clearChildren("summaryAction")
+    
+    if(summaryList.size == 0) {
+        getElement("summaryList").textContent = "None"
+    } else {
+        summaryList.forEach((summary)=> {
+            const sDiv = document.createElement("div")
+            const actDiv = document.createElement("div")
+            const remove = document.createElement("input")
+        
+            remove.type = "button"
+            remove.value = "Remove"
+        
+            remove.addEventListener('click', function() {
+                removeSummary(summary)
+                updateSummary()
+                handleFilter()
+            })
+        
+            sDiv.style.padding = '10px'
+            sDiv.textContent = summary
+        
+            actDiv.appendChild(remove)
+        
+            getElement("summaryList").appendChild(sDiv)
+            getElement("summaryAction").appendChild(actDiv)
+        })
+    }
+    
+    updateGroupSortList()
+    
+    changeAppliedFiltersVisibility()
+}
+
+</script>
+                     

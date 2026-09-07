@@ -1,0 +1,108 @@
+
+<div id="addGroupBy" style="display: none"class="modal-overlay"> 
+<div class="modal-box">
+    <table>
+        <thead>
+            <tr>
+                <td colspan="2" style="text-align: center">
+                    <h3>Add Group by</h3>
+                </td>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    Select Group by
+                </td>
+                <td>
+                    <div class="custom-select" id="groupBy" >
+                        <div class="select-box">Select groupby</div>
+                        <div class="options-container">
+                        
+                        <? for(group in groupCols) { ?>
+                        <div data-value="<?= group ?>" class="option">
+                            <?= group ?>
+                        </div>
+                        <? } ?>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+        <tbody>
+            <tr>
+                <td colspan="2" style="text-align: center">
+                    <input type="button" value="Back" onclick="hideGroupBy()">
+                    <input type="button" value="Add" onclick="handleAddGroupBy()">
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    
+</div>
+</div>
+<script>
+var groupByList = new Set()
+
+function showGroupBy() {
+    show("addGroupBy")
+}
+
+function hideGroupBy() {
+    hide("addGroupBy")
+}
+
+function addGroupBy(){
+    groupByList.add(getValue("groupBy"))
+}
+
+function removeGroupBy(item) {
+    groupByList.delete(item)
+}
+
+function handleAddGroupBy() {
+    addGroupBy()
+    hideGroupBy()
+    updateGroupBy()
+    handleFilter()
+}
+
+function updateGroupBy() {
+    clearChildren("groupList")
+    clearChildren("groupAction")
+    
+    if(groupByList.size == 0) {
+        getElement("groupList").textContent = "None"
+    } else {
+        groupByList.forEach((groupBy)=> {
+            const gDiv = document.createElement("div")
+            const actDiv = document.createElement("div")
+            const remove = document.createElement("input")
+        
+            remove.type = "button"
+            remove.value = "Remove"
+        
+            remove.addEventListener('click', function() {
+                removeGroupBy(groupBy)
+                handleFilter()
+                updateGroupBy()
+                changeAppliedFiltersVisibility()
+            })
+        
+            gDiv.style.padding = '10px'
+            gDiv.textContent = groupBy
+        
+            actDiv.appendChild(remove)
+        
+            getElement("groupList").appendChild(gDiv)
+            getElement("groupAction").appendChild(actDiv)
+        })
+    }
+    
+    updateGroupSortList()
+    
+    changeAppliedFiltersVisibility()
+}
+
+</script>
+                    

@@ -1,0 +1,484 @@
+<div id="content">
+    <center>
+        <table>
+            <tbody id="data">
+                    
+            </tbody>
+        </table>
+    </center>
+</div>
+<div id="loader" class="loader" data-msg="Data is loading">
+    
+</div>
+<div id="imgDialog" style="display: none" class="modal-overlay">
+    <div class="modal-box">
+       <img src="" id="image">
+       <div style="text-align: center">
+           <input type="button" value="Close" onclick="hide('imgDialog')">
+       </div>
+    </div>
+</div>
+<script>
+    
+const updateForm = {
+    "Date": updateDate, 
+    "Share": updateShares, 
+    "Item": updateCategoryItem, 
+    "Quantity": updateQtyUnit, 
+    "Price": updatePriceExpenseType, 
+    "Comment": updateComment
+    
+}
+    
+const widths = <?!= JSON.stringify(widths) ?>;
+
+const logoBase64 = "<?= logoBase64 ?>"
+
+function updateDate(valueStr) {
+    set("curr", valueStr) ;
+}
+
+function updateShares(valueStr) {
+    <? if(permissions.includes("simple")) { ?>
+    setValue("shareOf", valueStr.split(" (")[0]) 
+    <? } else { ?>
+    share = valueStr.split(" / ").map((str) => {
+        const nameType = str.split(" (");
+        const name = nameType[0]
+        var type
+        var amount
+        switch(true) {
+            case nameType[1].endsWith("%)") :
+                const avg = Number(nameType[1].slice(0, nameType[1].length -2)) 
+                
+                if(avg == 100) {
+                    type = "full"
+                } else {
+                    type = "avg"
+                }
+                break;
+            case nameType[1].endsWith("~)"):
+                type="remaining"
+                break;
+            default:
+                type= "fixed"
+                amount = Number(nameType[1].slice(1, nameType[1].length -2))
+        }
+        
+        const obj =  {name, type, amount}
+        
+         
+        return obj
+    }) 
+    
+    updateShare()
+    <? } ?>
+    
+    
+}
+
+function updateCategoryItem(valueStr) {
+    const categoryItem = valueStr.split(" >> ")
+    <? if(permissions.includes("edit")) { ?>
+    itemLoaded = function() {
+        updateItem(categoryItem[1])
+        itemLoaded = undefined
+    }
+    <? } ?>
+    
+    setValue("category", categoryItem[0]) 
+        
+}
+
+function updateItem(valueStr) {
+    <? if(permissions.includes("edit")) { ?>
+    if(!setValue("item", valueStr)) {
+        setValue("item", "Other") 
+        set("otherItem", valueStr) 
+    } else {
+        hide("otherItemRow") 
+    }
+    <? } ?>
+}
+
+function updateQtyUnit(valueStr) {
+    <? if(permissions.includes("edit")) { ?>
+    const qtyUnit = valueStr.split(" ") 
+   
+    set("qty", Number(qtyUnit[0])) 
+    updateUnit(qtyUnit[1]) 
+    <? } ?>
+}
+
+function updateUnit(valueStr) {
+    <? if(permissions.includes("edit")) { ?>
+    if(!setValue("unit", valueStr)) {
+        setValue("unit", "Other") 
+        set("otherUnit", valueStr) 
+    } else {
+        hide("otherUnitRow")
+    }
+    <? } ?>
+}
+
+function updatePriceExpenseType(valueStr) {
+    const priceExlenseType = valueStr.split(" ") 
+    set("price", Number(priceExlenseType[1])) 
+    <? if(permissions.includes("edit")) { ?>
+    setValue("expenseType", priceExlenseType[2]) 
+    <? } ?>
+}
+
+function updateComment(valueStr) {
+    set("comment", valueStr) 
+}
+
+function renderPage(myPageIndex) {
+    
+    return function(data) {
+        
+        if(myPageIndex!= currentPageIndex) {
+            return;
+        }
+        
+        
+        try {
+            if(data.dates) {
+                set("prev", data. dates.prevDay);
+            set("curr", data. dates.currDay);
+            switch(data.dates.currDay) {
+                case today.yest:
+                    getElement("date").textContent = "Yesterday";
+                    break;
+
+                case today.today:
+                    getElement("date").textContent = "Today";
+                    break;
+                case today.tomm:
+                    getElement("date").textContent = "Tomorrow";
+                    break;
+
+                default:
+                    getElement("date").textContent = data.dates.currDay;
+
+            }
+            set("next", data.dates.nextDay)
+            }
+            if(data.data) {
+                updateTable(data.dataOf, data.data, data.dates) 
+                <? if(permissions.includes("report")) { ?>
+                visible("downloadBtn", data.data.length)
+                <? } ?>
+                <? if(permissions.includes("admin")) { ?>
+               
+                visible("backupBtn", data.data.length && !data.dataOf[0].Source.toLowerCase().includes("backup"))
+                <? } ?>
+            } else if(data.groups) {
+           
+                updateGroups(data.dataOf, data.groups)
+                <? if(permissions.includes("report")) { ?>
+                visible("downloadBtn", Object.keys(data.groups).length)
+                <? } ?>
+            } else if(data.summaries) {
+          
+                updateSummaries(data.dataOf, data.summaries)
+                <? if(permissions.includes("report")) { ?>
+                visible("downloadBtn", data.summaries.length)
+                <? } ?>
+            }
+        } catch(e) {
+            //alert(JSON.stringify(e))
+        }
+        
+    
+        loaded(true)
+    }
+}
+
+function updateTable(dataOf, rows, provideRemove) {
+
+    clearChildren("data")
+  
+    printRow(dataOf, true) 
+    addBlankRow()
+    addBlankRow()
+   
+    if(rows.length) {
+        for (rowIndex in rows) {
+     
+            for(rowId in rows[rowIndex]) {
+                <? if(!permissions.includes("edit") && !permissions.includes("simple")) { ?>
+                addRow(false, rows[rowIndex][rowId])
+                addBlankRow()
+                <? } else { ?>
+                if(provideRemove) {
+                   
+                    addRow(rowId, rows[rowIndex][rowId])
+                } else {
+                    addRow(false, rows[rowIndex][rowId])
+                }
+                <? } ?>
+                
+                
+            }
+            
+        }
+    } else {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 10
+        td.textContent = "No data found"
+        tr.appendChild(td)
+        getElement("data").appendChild(tr)
+    }
+
+}
+
+function updateGroups(dataOf, groups) {
+
+    clearChildren("data")
+  
+    printRow(dataOf, true) 
+    addBlankRow()
+    addBlankRow()
+   
+    if(Object.keys(groups).length > 0) {
+        for(groupIndex in groups) {
+            for(groupId in groups[groupIndex]) {
+                const groupArray = JSON.parse(groupId)
+                const rows = groups[groupIndex][groupId]
+            
+                printRow(groupArray, true)
+                addBlankRow()
+            
+                for (rowIndex in rows) {
+     
+                    for(rowId in rows[rowIndex]) {
+                        printRow(rows[rowIndex][rowId], false)
+                        addBlankRow()
+                    }
+            
+                }
+            }
+        }
+        
+    } else {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 10
+        td.textContent = "No data found"
+        tr.appendChild(td)
+        getElement("data").appendChild(tr)
+    }
+
+}
+
+function updateSummaries(dataOf, summaries) {
+    clearChildren("data")
+   
+    printRow(dataOf, true) 
+    addBlankRow()
+    addBlankRow()
+   
+    for(rowIndex in summaries) {
+        const row = summaries[rowIndex]
+        try{
+            printRow(row, false)
+        } catch(e) {
+            alert(e.message)
+        }
+        
+        addBlankRow()
+    }
+}
+
+function printRow(row, bigger) {
+    
+    for(columnIndex in row) {
+       
+        for(heading in row[columnIndex]) {
+            const tr = document.createElement("tr");
+            const th = document.createElement("th");
+            const td = document.createElement(bigger? "th":"td");
+            const value = row[columnIndex][heading]
+            
+            if(bigger) {
+                const thH3 = document.createElement("h3");
+                const tdH3 = document.createElement("h3");
+                thH3.textContent = heading
+                tdH3.textContent = value
+                
+                th.appendChild(thH3)
+                td.appendChild(tdH3)
+            } else if(typeof value === "string" && value.startsWith("http")){
+                const btn = document.createElement("input");
+                btn.type = "button"
+                btn.value= "Show"
+                btn.addEventListener('click', function() {
+                    getElement("image").src = value
+                    show("imgDialog") 
+                }) 
+                const img = new Image();
+                img.src = value
+                
+                td.style.textAlign ="center"
+
+
+                th.textContent = heading;
+                td. appendChild(btn)
+            } else {
+                th.textContent = heading;
+                td.textContent = value;
+            }
+
+            tr.appendChild(th);
+            tr.appendChild(td);
+    
+            getElement("data").appendChild(tr)
+        }
+        
+    }
+}
+
+function addBlankRow() {
+    const tr = document.createElement("tr");
+    const th = document.createElement("th");
+    const td = document.createElement("th");
+            
+    tr.appendChild(th);
+    tr.appendChild(td);
+    
+    getElement("data").appendChild(tr)
+}
+
+
+function addRow(rowId, row) {
+    
+    printRow(row, false)
+    
+    <? if(permissions.includes("edit")|| permissions.includes("simple")) { ?>
+    if(rowId) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        const rem = document.createElement("input");
+        const updt = document.createElement("input");
+        const upld = document.createElement("input");
+        const confirmModal = document.createElement("div");
+        const modalBox = document.createElement("div");
+        const message = document.createElement("p");
+        const yes = document.createElement("button");
+        const no = document.createElement("button");
+
+        td.colSpan = 2;
+        td.style.textAlign = "center";
+    
+        confirmModal.className = "modal-overlay"
+        modalBox.className = "modal-box"
+        message.textContent = "Are you sure to delete this expense?"
+    
+        yes.className = "btn btn-confirm"
+        no.className = "btn btn-cancel"
+    
+        yes.textContent = "Yes"
+        no.textContent = "No"
+    
+        confirmModal.appendChild(modalBox)
+        modalBox.appendChild(message)
+        modalBox.appendChild(yes)
+        modalBox.appendChild(no)
+    
+        yes.addEventListener('click', function() {
+            loaded(false);
+            google.script.run
+                .withSuccessHandler(renderDeleteRow)
+                .deleteRow(rowId);
+        });
+    
+        no.addEventListener('click', function() {
+            confirmModal.style.display = 'none';
+        });
+        
+        upld.type = "button";
+        upld.value = "Upload Proof";
+        upld.className = "btn";
+        upld.addEventListener('click', () => {
+            set("timeStamp", rowId) ;
+            show("uploadProof") ;
+        }) 
+         
+        updt.type = "button";
+        updt.value = "Update above Data";
+        updt.className = "btn";
+        updt.addEventListener('click', () => {
+            set("rowId", rowId);
+            <? if(permissions.includes("report")) { ?>
+            hideReport() 
+            
+            <? } ?>
+          
+            for(colIndex in row) {
+                for(colName in row[colIndex]) {
+                    const valStr = row[colIndex][colName]
+                    if(updateForm[colName]) {
+                        
+                        updateForm[colName](valStr) 
+                    }
+                    
+                    
+                }
+            }
+            set("addBtn", "Update") 
+        }) 
+    
+        rem.type = "button";
+        rem.value = " Remove above Data";
+        rem.className = "btn"
+        rem.addEventListener('click', () => {
+            getElement("Err_" + rowId).textContent = "";
+ 
+            confirmModal.style.display = 'flex';
+        
+        });
+
+        td.appendChild(upld)
+        td.appendChild(updt) 
+        td.appendChild(confirmModal)
+        td.appendChild(rem);
+
+        tr.appendChild(td);
+
+        getElement("data").appendChild(tr)
+
+        const errTr = document.createElement("tr");
+        const errTd = document.createElement("td");
+
+        errTr.id = "Err_" + rowId;
+        errTr.style.display = "none";
+
+        errTd.colSpan = 2;
+        errTd.style.textAlign = "center";
+        errTd.style.color = "red";
+
+        errTr.appendChild(errTd)
+
+        getElement("data").appendChild(errTr);
+    } else {
+        addBlankRow()
+    }
+    <? } else { ?>
+    addBlankRow()
+    <? } ?>
+    
+}
+
+function renderDeleteRow(verification) {
+    if(verification.success) {
+        handleDate("curr")
+    } else {
+        getElement("Err_" + verification.timeStamp).textContent = verification.message;
+        loaded(true)
+    }
+    
+}
+
+</script>

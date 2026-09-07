@@ -1,0 +1,56 @@
+<div id="summary" class="panel right">
+    <button onclick="backToHome()" class="btn-link" ><< Back</button>
+    <h2 id="title"></h2>
+    
+    <?!= include("DashboardChart") ?>
+    
+    <div id="container"></div>
+</div>
+<script>
+function renderSummary(url) {
+    currentIndex++
+    screen = screens[1]
+    screenUrl = url
+    const dashboard = dashboardUrls[url]
+    document.getElementById('title').textContent = dashboard.title
+        var tabData = [...dashboard.summaryTable.headers, ...dashboard.summaryTable.rows];
+        
+        createStickyTable({
+            container: document.getElementById('container'),
+            rowCount: dashboard.summaryTable.headers.length + dashboard.summaryTable.rows.length,
+            colCount: dashboard.summaryTable.headers[0].length,
+            freezeRows: dashboard.summaryTable.headers.length,
+            freezeCols: 1,
+            mergeCells: dashboard.summaryTable.mergedCells,
+            getCellContent: (r, c) => {
+                if(r>=dashboard.summaryTable.headers.length && r< (dashboard.summaryTable.headers.length + dashboard.summaryTable.rows.length-1) && c>0 && c< (dashboard.summaryTable.headers.at(-1).length-1)) {
+                if(tabData[r][c].value) 
+                    return `<button class="btn-link" onclick="renderDetail(\'${url}\',${r}, ${c})">₹ ${tabData[r][c].value}</button>`
+                    
+                else return "₹ 0"
+                } else {
+                    return (tabData[r][c] != "" && isNumber(tabData[r][c]))?("₹ "+tabData[r][c])  : (tabData[r][c]|| "") 
+                }
+            }
+        });
+    
+    updatePanels()
+
+    selectChart(url)
+}
+
+function backToHome() {
+    currentIndex--
+    screen = screens[0]
+    updatePanels()
+}
+
+function isNumber(value) {
+  if (value === null || value === undefined || typeof value === 'symbol') {
+    return false;
+  }
+  const num = Number(value);
+  return typeof num === 'number' && !Number.isNaN(num);
+}
+
+</script>

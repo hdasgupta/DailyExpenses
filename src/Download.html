@@ -1,0 +1,52 @@
+
+<script>
+
+
+var fltrs
+var sorts
+var groupBys
+var summarys
+function savePageAsPDF() {
+    groupBys = Array.from(groupByList);
+    summarys = Array.from(summaryList);
+    sorts = groupBys.length ? [...groupSortList]: [...sortList]
+    fltrs= {...filters}
+    show("loader")
+    hide("content")
+        
+     google.script.run
+        .withSuccessHandler(processFilteredData)
+        .withFailureHandler(processErrorMsg) 
+        .downloadPdf(fltrs, sorts, groupBys, summarys);   
+}
+
+function processFilteredData(output) {
+   
+    const [filename, base64Data] = Object.entries(output)[0]
+    downloadBase64File(base64Data, filename) 
+}
+
+function processErrorMsg(e) {
+    alert(JSON.stringify(e)) 
+}
+
+function downloadBase64File(base64Data, fileName="Report.pdf", mimeType = 'application/pdf') {
+  // Ensure the string has a proper Data URL scheme
+  const dataUrl = base64Data.startsWith('data:') 
+    ? base64Data 
+    : `data:${mimeType};base64,${base64Data}`;
+
+  // Create a temporary hidden <a> tag
+  const link = document.createElement('a');
+  link.href = dataUrl;
+  link.download = fileName;
+  
+  // Append to body, trigger click, and remove
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  hide("loader")
+    show("content")
+}
+
+</script>

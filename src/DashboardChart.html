@@ -1,0 +1,244 @@
+<div class="chart-wrapper">
+   
+    <div class="chart-viewport">
+      <svg class="trend-svg" id="trend-svg"></svg>
+      <div class="chart-container" id="chart"></div>
+    </div>
+
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <div class="dialog-overlay" id="dialog-overlay">
+    <div class="dialog-box" id="dialog-box">
+      <button class="dialog-close-icon" id="dialog-close-btn" aria-label="Close">&times;</button>
+      <h3 class="dialog-title">Data Point Selected</h3>
+      <div class="dialog-body" id="dialog-body"></div>
+      <div class="dialog-actions">
+        <button class="btn-primary" id="dialog-details-btn">Show Details</button>
+      </div>
+    </div>
+  </div>
+<script>
+// 15-Color Prefixed Palette
+const COLOR_PALETTE = [
+  '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899',
+  '#06b6d4', '#f97316', '#14b8a6', '#6366f1', '#a855f7',
+  '#ef4444', '#84cc16', '#0284c7', '#d97706', '#db2777'
+];
+
+let selectedPoint = null;
+let showTrendLine = true;
+let scrollLeft = 0
+
+const chartContainer = document.querySelector('#chart');
+const trendSvg = document.querySelector('#trend-svg');
+const legendContainer = document.querySelector('#legend');
+const updateBtn = document.querySelector('#update-btn');
+
+const dialogOverlay = document.querySelector('#dialog-overlay');
+const dialogBody = document.querySelector('#dialog-body');
+const dialogCloseBtn = document.querySelector('#dialog-close-btn');
+const dialogDetailsBtn = document.querySelector('#dialog-details-btn');
+
+const mapSeriesToColors = (seriesKeys) => 
+  seriesKeys.reduce((acc, key, index) => {
+    acc[key] = COLOR_PALETTE[index % COLOR_PALETTE.length];
+    return acc;
+  }, {});
+
+const getSeriesKeys = (data) => 
+  [...new Set(data.flatMap(item => Object.keys(item.values)))];
+
+const getMaxValue = (data) => 
+  Math.max(...data.flatMap(item => Object.values(item.values)));
+
+const renderLegend = (seriesKeys, colorMap) => {
+  legendContainer.innerHTML = seriesKeys.map(key => `
+    <div class="legend-item">
+      <span class="legend-color" style="background-color: ${colorMap[key]};"></span>
+      <span>${key}</span>
+    </div>
+  `).join('');
+};
+
+const openDetailDialog = (category, seriesKey, value) => {
+  const dashboard = dashboardUrls[screenUrl]
+  const splited = splitGroups(dashboard.groups)
+  selectedPoint = {}
+  const cols = category.split(" / ") 
+  splited.groupsCol.forEach((col, index)=> selectedPoint[col]= cols[index]) 
+  const rows = seriesKey.split(" / ") 
+  splited.groupsRow.forEach((row, index)=> selectedPoint[row]= rows[index]) 
+  dialogBody.innerHTML = dashboard.groups.map((group) => `<p><strong>${group}:</strong> ${selectedPoint[group]}</p>`).join("") + `<p><strong>Expense:</strong> ₹ ${value}</p>`;
+  
+  const keyObj = dashboard.groups.map((group) => {
+        const keyPart = {}
+        keyPart[group] = selectedPoint[group]
+        return keyPart
+    });
+  const key = JSON.stringify(keyObj)
+   
+  dialogDetailsBtn.style.display = dashboard.groupRows[key] ? "" : "none";
+  
+  dialogOverlay.classList.add('active');
+};
+
+const closeDetailDialog = () => {
+  dialogOverlay.classList.remove('active');
+};
+
+dialogCloseBtn.addEventListener('click', closeDetailDialog);
+dialogOverlay.addEventListener('click', (e) => {
+  if (e.target === dialogOverlay) closeDetailDialog();
+});
+
+dialogDetailsBtn.addEventListener('click', () => {
+  if (selectedPoint) {
+    const dashboard = dashboardUrls[screenUrl]
+    const keyObj = dashboard.groups.map((group) => {
+        const keyPart = {}
+        keyPart[group] = selectedPoint[group]
+        return keyPart
+    });
+    
+    currentIndex++
+    screen = screens[2]
+    
+    finalRemderDetail(keyObj);
+    closeDetailDialog();
+  }
+});
+chartContainer.addEventListener('scroll', () => {
+  if (showTrendLine) {
+    scrollLeft = chartContainer.scrollLeft;
+    // Hardware-accelerated shift
+    trendSvg.style.transform = `translateX(-${scrollLeft}px)`;
+  }
+});
+
+// Draws dynamic average trendline connecting category average heights
+const drawTrendLine = (data) => {
+  if (!showTrendLine || !data || !data.length) {
+    trendSvg.innerHTML = '';
+    return;
+  }
+
+  const groupElements = document.querySelectorAll('.group-wrapper');
+  if (!groupElements.length) return;
+
+  const rawMax = getMaxValue(data);
+  const maxValue = rawMax > 0 ? rawMax : 1;
+
+  // 1. Expand SVG width to cover the entire scrollable track
+  const fullWidth = chartContainer.scrollWidth;
+  const svgHeight = 220;
+
+  trendSvg.style.width = `${fullWidth}px`;
+  trendSvg.setAttribute('width', fullWidth);
+  trendSvg.setAttribute('height', svgHeight);
+
+  const points = [];
+
+  groupElements.forEach((groupEl, idx) => {
+    // 2. Lock X directly to element's horizontal offset inside scroll parent
+    const x = groupEl.offsetLeft + (groupEl.offsetWidth / 2);
+
+    const vals = Object.values(data[idx].values || {}).map(Number);
+    const avg = vals.length ? vals.reduce((sum, v) => sum + v, 0) / vals.length : 0;
+
+    const chartAreaHeight = svgHeight - 40;
+    const scaledHeight = (avg / maxValue) * chartAreaHeight;
+    const y = svgHeight - scaledHeight - 20;
+
+    points.push({ x, y });
+  });
+
+  const pointsString = points.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+
+  trendSvg.innerHTML = `
+    <polyline points="${pointsString}" fill="none" stroke="#ef4444" stroke-width="3" stroke-dasharray="5 5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${points.map(pt => `<circle cx="${pt.x}" cy="${pt.y}" r="5" fill="#ef4444" stroke="#ffffff" stroke-width="2"/>`).join('')}
+  `;
+};
+
+
+const renderChart = (data) => {
+  const seriesKeys = getSeriesKeys(data);
+  const colorMap = mapSeriesToColors(seriesKeys);
+  const maxValue = getMaxValue(data);
+
+  renderLegend(seriesKeys, colorMap);
+  chartContainer.innerHTML = '';
+
+  data.forEach(({ category, values }) => {
+    const groupWrapper = document.createElement('div');
+    groupWrapper.className = 'group-wrapper';
+
+    const barsGroup = document.createElement('div');
+    barsGroup.className = 'bars-group';
+
+    seriesKeys.forEach(key => {
+      const val = values[key] ?? 0;
+      const pct = ((val / maxValue) * 100).toFixed(1);
+      const color = colorMap[key];
+
+      const barWrapper = document.createElement('div');
+      barWrapper.className = 'bar-wrapper';
+
+      const barValue = document.createElement('span');
+      barValue.className = 'bar-value';
+      barValue.textContent = "₹ "+val;
+      barValue.addEventListener('click', () => openDetailDialog(category, key, val));
+
+      const bar = document.createElement('div');
+      bar.className = 'bar';
+      bar.style.height = '0%';
+      bar.style.backgroundColor = color;
+      bar.dataset.height = `${pct}%`;
+      bar.addEventListener('click', () => openDetailDialog(category, key, val));
+
+      barWrapper.appendChild(barValue);
+      barWrapper.appendChild(bar);
+      barsGroup.appendChild(barWrapper);
+    });
+
+    const groupLabel = document.createElement('div');
+    groupLabel.className = 'group-label';
+    groupLabel.textContent = category;
+
+    groupWrapper.appendChild(barsGroup);
+    groupWrapper.appendChild(groupLabel);
+    chartContainer.appendChild(groupWrapper);
+  });
+
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.bar').forEach(bar => {
+      bar.style.height = bar.dataset.height;
+    });
+    setTimeout(() => drawTrendLine(data, maxValue), 3000);
+  });
+};
+
+
+
+window.addEventListener('resize', () => {
+  const dashboard = dashboardUrls[screenUrl]
+  if(dashboard) {
+    drawTrendLine(dashboard.summaryTable.chart, getMaxValue(dashboard.summaryTable.chart))
+  
+    trendSvg.style.transform = `translateX(-${scrollLeft}px)`;
+  }
+  
+});
+
+
+  
+function selectChart(url) {
+    const dashboard = dashboardUrls[url]
+    
+    renderChart(dashboard.summaryTable.chart);
+    scrollLeft = 0;
+    drawTrendLine(dashboard.summaryTable.chart, getMaxValue(dashboard.summaryTable.chart))
+  
+}
+</script>
