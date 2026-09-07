@@ -279,7 +279,7 @@ function checkStakeholder(row, filters) {
     console.log(JSON.stringify(row[1]))
     const stakeholders = filters["Stakeholder"].map((st) => st[0].value);
     const currentStakeholders = row[1].map((st)=>st.name)
-    return currentStakeholders.some(stakeholders.includes(st))
+    return currentStakeholders.some((st)=> stakeholders.includes(st))
 }
 
 function checkItem(row, filters) {
