@@ -164,8 +164,6 @@ function drawTable(body, table) {
 function drawNormalOrSummaryTable(body, table) {
     drawChart(body, table.chart)
     
-    var tabData = [...table.headers, ...table.rows].map((row) => row.map((column) => column ? column : ""))
-    
     const proofUrlIndex = table.headers[0].indexOf("Proof")
 const urls = table.rows.map((row) => {
     
@@ -182,8 +180,10 @@ const data = table.rows.map((row) => {
     }
     return row
 })
+    var tabData = [...table.headers, ...data].map((row) => row.map((column) => column ? column : ""))
     
     const tab = body.appendTable(tabData);
+    
     
     if (proofUrlIndex != -1) {
     urls.forEach((url, index) => {
