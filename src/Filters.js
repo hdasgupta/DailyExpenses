@@ -63,7 +63,7 @@ const availableFilters = {
         stringPriority: 2
     }, 
     "Stakeholder": {
-        multiple: false, 
+        multiple: true, 
         checker: checkStakeholder, 
         fields: [
             {
